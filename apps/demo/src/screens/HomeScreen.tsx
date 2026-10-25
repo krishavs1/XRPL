@@ -1,6 +1,5 @@
 import type { ActivityEntry } from "../activity";
 import { ActivityList } from "../ActivityList";
-import { HeroScene } from "../HeroScene";
 
 interface Props {
   activity: ActivityEntry[];
@@ -20,18 +19,14 @@ export function HomeScreen({ activity, onStart, onOpen, onHistory }: Props) {
   return (
     <section className="home">
       <div className="hero">
-        <div>
-          <span className="tagline">XRPL clear signing</span>
-          <h2>Stop blind-signing.</h2>
-          <p>
-            See what an XRP Ledger transaction really does before you sign it: in plain English, with the same risk
-            warnings in every wallet, down to a hardware wallet's screen.
-          </p>
-          <button className="accent big" onClick={onStart}>
-            ▼ Check a transaction ▼
-          </button>
-        </div>
-        <HeroScene />
+        <h2>Stop blind-signing on the XRP Ledger.</h2>
+        <p>
+          See what a transaction really does before you sign it: in plain English, with the same risk warnings in every
+          wallet, down to a hardware wallet's screen.
+        </p>
+        <button className="accent big" onClick={onStart}>
+          Check a transaction →
+        </button>
       </div>
 
       <div className="how">

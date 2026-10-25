@@ -137,7 +137,7 @@ export function App() {
       <header>
         <button className="brand" onClick={() => go("home")} aria-label="Home">
           <svg width="26" height="26" viewBox="0 0 48 48" aria-hidden="true">
-            <g fill="currentColor">
+            <g fill="#006aff">
               <circle cx="24" cy="13" r="6.5" />
               <circle cx="14" cy="31" r="6.5" />
               <circle cx="34" cy="31" r="6.5" />
