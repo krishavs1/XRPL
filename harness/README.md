@@ -1,53 +1,57 @@
 # Ledger signing harness
 
-Two paths to a device-signed XRPL transaction. **Do this first — it's the
-highest-variance dependency and qualifies the Ledger bounty.**
+Two scripts, same goal: a device-signed, testnet-settled XRPL transaction with
+the Clear Signing preview shown first. **No hardware or booth needed** — the
+Ledger workshop repo (cloned at `vendor/ledger-workshop/`, gitignored) ships
+prebuilt XRP app binaries for every device model.
 
-## Path A: Speculos emulator (no hardware needed)
-
-1. Get the XRP device app binary (`.elf`). Sources, in order of ease:
-   - Ask at the **Ledger booth** — they have builds and the workshop repo.
-   - Ledger's hackathon workshop repo (linked from https://developers.ledger.com/xrplnyc) ships Speculos setup.
-   - Build from https://github.com/LedgerHQ/app-xrp (needs the Ledger build toolchain).
-
-2. Run Speculos (Docker is simplest):
-
-   ```sh
-   docker run --rm -it -p 5000:5000 -v "$PWD:/apps" \
-     ghcr.io/ledgerhq/speculos --model nanosp /apps/xrp.elf \
-     --display headless --api-port 5000
-   ```
-
-3. Sign:
-
-   ```sh
-   npx tsx harness/sign-hw-app.ts
-   ```
-
-   Approve on the emulated screen at http://127.0.0.1:5000.
-
-## Path B: the pre-release `device-signer-kit-xrp` (the bounty wants this)
-
-Ledger's brief: "integrate it into a real app, find where it breaks, and extend
-it. Bug reports and PRs count." Docs:
-https://developers.ledger.com/docs/device-interaction/dmk-ts/references/signers/xrp
+## Run the emulator (Docker Desktop must be running)
 
 ```sh
-npm install @ledgerhq/device-signer-kit-xrp @ledgerhq/device-management-kit
+docker pull ghcr.io/ledgerhq/speculos:latest
+cd vendor/ledger-workshop/xrpl-hackathon/speculos && ./run-speculos.sh stax
 ```
 
-Port `sign-hw-app.ts` to the DMK transport + XRP signer. **Every breakage goes
-in FEEDBACK.md and as a GitHub issue on LedgerHQ/device-sdk-ts — that's judged
-as much as the code.** Keep Path A as the working fallback for the demo.
+Wait for `[run-speculos] Speculos is ready`. Screen: http://127.0.0.1:5000 or
+`open vnc://127.0.0.1:41000` (password `speculos`). First run writes a random
+seed to `.seed` so your testnet address stays stable.
 
-## Physical device (booth, final demo)
+macOS gotcha: port 5000 is often taken by AirPlay Receiver — turn it off in
+System Settings if Speculos won't bind.
 
-Swap the transport for `@ledgerhq/hw-transport-node-hid` (Node) or
-`@ledgerhq/hw-transport-webusb` (browser demo) — the Xrp app API is identical.
+## Script 1 — `sign-dmk.ts` (the bounty path)
 
-## Notes
+Uses the **pre-release `@ledgerhq/device-signer-kit-xrp`** via the Device
+Management Kit + Speculos transport. Full flow: get address → faucet-fund →
+autofill payment → **Clear Signing preview** → sign on device → submit →
+explorer link.
 
-- `signTransaction` takes the serialized tx hex **with SigningPubKey set**; the
-  device returns a DER signature that goes into `TxnSignature`.
-- Autofill `Sequence`/`Fee` from the network before encoding (account_info) —
-  the harness currently hardcodes them for the offline Speculos flow.
+```sh
+npx tsx harness/sign-dmk.ts
+```
+
+Every rough edge in the kit → `FEEDBACK.md` + issue on
+[LedgerHQ/device-sdk-ts](https://github.com/LedgerHQ/device-sdk-ts). Ledger
+judges this as much as code.
+
+## Script 2 — `sign-hw-app.ts` (stable fallback)
+
+Same idea on the older, stable `@ledgerhq/hw-app-xrp` stack. Keep it as the
+known-good path if the pre-release kit breaks.
+
+## Key API facts (from Ledger's workshop)
+
+- Serialize with `encode(tx)`, **not** `encodeForSigning()` — the XRP device
+  app adds the signing prefix itself.
+- `SigningPubKey` = device public key, **uppercase** hex, set before encoding.
+- The signature comes back as DER; it goes in `TxnSignature`, uppercase hex.
+- Signer methods return `{ observable, cancel }`, not promises.
+- Derivation path `44'/144'/0'/0/0`; bump the 3rd index for more accounts.
+- Some newer tx types need the device's **Blind signing** setting — which is
+  exactly the problem this project exists to fix. Use that line in the pitch.
+
+## Real device (booth, tomorrow)
+
+- Node: swap the transport for `@ledgerhq/device-transport-kit-node-hid`.
+- Browser demo: `@ledgerhq/device-transport-kit-web-hid` (Chrome/Edge/Brave).
+- Install the XRP app on the device via Ledger Wallet first.
