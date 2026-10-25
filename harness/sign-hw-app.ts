@@ -1,5 +1,5 @@
 /**
- * Ledger signing harness — works against Speculos (emulator) or can be adapted
+ * Ledger signing harness - works against Speculos (emulator) or can be adapted
  * to a physical device via @ledgerhq/hw-transport-node-hid.
  *
  * Flow: derive pubkey from device → render Clear Signing preview in the
@@ -24,7 +24,7 @@ async function main() {
   const { address, publicKey } = await xrp.getAddress(DERIVATION_PATH);
   console.log(`Device address: ${address}`);
 
-  // Demo transaction — swap in anything; explain() shows what we're signing.
+  // Demo transaction - swap in anything; explain() shows what we're signing.
   const tx: Record<string, any> = {
     TransactionType: "Payment",
     Account: address,

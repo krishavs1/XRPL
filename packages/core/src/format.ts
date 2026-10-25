@@ -30,7 +30,7 @@ export function isIssuedAmount(a: Amount | undefined): a is IssuedAmount {
 }
 
 export function formatAmount(a: Amount | undefined, registry?: Registry): string {
-  if (a === undefined || a === null) return "—";
+  if (a === undefined || a === null) return "-";
   if (typeof a === "string") {
     const xrp = Number(a) / 1_000_000;
     return `${xrp.toLocaleString("en-US", { maximumFractionDigits: 6 })} XRP`;
@@ -63,11 +63,11 @@ export function formatAccount(addr: string, registry: Registry): string {
   if (entry) {
     return `${entry.name}${entry.verified ? " ✓" : ""} (${truncateAddress(addr)})`;
   }
-  return `${truncateAddress(addr)} — unknown account`;
+  return `${truncateAddress(addr)} - unknown account`;
 }
 
 export function rippleTimeToISO(t: number | undefined): string {
-  if (t === undefined || t === null) return "—";
+  if (t === undefined || t === null) return "-";
   return new Date((t + RIPPLE_EPOCH) * 1000).toISOString().replace(".000Z", "Z");
 }
 

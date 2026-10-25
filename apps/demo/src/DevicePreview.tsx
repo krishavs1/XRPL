@@ -6,7 +6,7 @@ const HOLD_MS = 1100;
 /**
  * The spec's device-profile screen sequence, rendered to match the real Ledger
  * Stax on the left (white screen, grouped field page, Reject + page counter +
- * hold-to-sign) — plus the clear-signing warning screens a device can't show
+ * hold-to-sign) - plus the clear-signing warning screens a device can't show
  * today. Consecutive field screens are grouped onto one page, the way a Stax
  * shows a transaction's fields together.
  */

@@ -31,7 +31,7 @@ const TESTNET_WSS = process.env.XRPL_WSS ?? "wss://s.altnet.rippletest.net:51233
 const FAUCET_URL = "https://faucet.altnet.rippletest.net/accounts";
 const PATH = "44'/144'/0'/0/0";
 
-/** DMK device actions return { observable, cancel } — resolve on completion. */
+/** DMK device actions return { observable, cancel } - resolve on completion. */
 function waitFor<T>(action: { observable: { subscribe: Function } }): Promise<T> {
   return new Promise((resolve, reject) => {
     action.observable.subscribe({
@@ -53,7 +53,7 @@ async function main() {
   try {
     const ping = await fetch(SPECULOS_URL, { signal: AbortSignal.timeout(1500) });
     if (ping.status === 403) {
-      console.error(`Got 403 from ${SPECULOS_URL} — that's macOS AirPlay Receiver squatting on port 5000, not Speculos.`);
+      console.error(`Got 403 from ${SPECULOS_URL} - that's macOS AirPlay Receiver squatting on port 5000, not Speculos.`);
       console.error("Fix: System Settings → General → AirDrop & Handoff → turn OFF AirPlay Receiver, then start Speculos.");
       process.exit(1);
     }
@@ -89,7 +89,7 @@ async function main() {
     if (e?.data?.error !== "actNotFound") throw e;
   }
   if (balance === null) {
-    console.log("Account not funded — asking the testnet faucet…");
+    console.log("Account not funded - asking the testnet faucet…");
     const res = await fetch(FAUCET_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

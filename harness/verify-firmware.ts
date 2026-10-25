@@ -2,7 +2,7 @@
  * Verifies the modified XRP app firmware renders the clear-signing warning:
  * sends a scam TrustSet to the device, then reads the Speculos screen text
  * and checks for the injected SECURITY WARNING review screen.
- * Resets nothing — restart the emulator after running (the pending review is abandoned).
+ * Resets nothing - restart the emulator after running (the pending review is abandoned).
  */
 import {
   DeviceActionStatus,

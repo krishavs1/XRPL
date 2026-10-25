@@ -2,7 +2,7 @@
 
 **Stop blind-signing on the XRP Ledger.** A display-metadata standard
 (ERC-7730-style, for XRPL) plus a reference TypeScript parser that turns any
-XRPL transaction — JSON or raw signing blob — into human-readable,
+XRPL transaction - JSON or raw signing blob - into human-readable,
 risk-annotated intent. Enriched with live `simulate` dry runs (XLS-69) and
 rendered against a Ledger device.
 
@@ -20,21 +20,21 @@ equivalent.
 
 ## What this is
 
-1. **`spec/transaction-display-metadata.md`** — a draft standard: the display
+1. **`spec/transaction-display-metadata.md`** - a draft standard: the display
    metadata format, an account registry with impersonation detection,
    standardized risk codes, Batch recursion rules, and a device rendering
    profile. `spec/DISCUSSION-POST.md` is the pre-proposal write-up for
    XRPL-Standards.
-2. **`packages/core`** (`xrpl-clear-signing`) — the reference parser:
+2. **`packages/core`** (`xrpl-clear-signing`) - the reference parser:
    `explain(blobOrJson) → DisplayIntent` for TrustSet, SetRegularKey,
    SignerListSet, AccountSet and AccountDelete (JSON metadata documents) and
    Payment, OfferCreate, EscrowCreate, AMMDeposit and Batch (TypeScript
    renderers), plus a safe fallback for every other type, and `simulateTx()`
    for XLS-69 dry-run enrichment.
-3. **`apps/demo`** — a web tool: paste hex or JSON, see the decoded intent and
+3. **`apps/demo`** - a web tool: paste hex or JSON, see the decoded intent and
    risk warnings, simulate against the network, stream live ledger
    transactions, and sign on a Ledger (Speculos emulator or a real device).
-4. **`harness/`** — standalone Ledger signing scripts: `sign-dmk.ts` (the
+4. **`harness/`** - standalone Ledger signing scripts: `sign-dmk.ts` (the
    pre-release `device-signer-kit-xrp`) and `sign-hw-app.ts` (the stable
    `hw-app-xrp` fallback).
 
@@ -65,7 +65,7 @@ For the Ledger flow, start the Speculos emulator first (see
 or run `npx tsx harness/sign-dmk.ts`.
 
 > **Emulator note:** Speculos serves one client at a time. Don't run the
-> harness and the browser demo (or two browser tabs) against it at once — a
+> harness and the browser demo (or two browser tabs) against it at once - a
 > concurrent APDU exchange surfaces as a generic "Unexpected device exchange
 > error". Use one client; after any device error, reload the tab.
 
@@ -75,7 +75,7 @@ or run `npx tsx harness/sign-dmk.ts`.
    effectively-unlimited limit, and **"RLUSD" impersonation**.
 2. Hit **simulate** → the ledger returns `tesSUCCESS`: a scam trustline is a
    perfectly valid transaction. Neither the ledger nor the device can see the
-   scam — only the metadata layer does.
+   scam - only the metadata layer does.
 3. Load the legit RLUSD TrustSet → clean preview, verified issuer ✓.
 4. Load the Batch → one signature, two inner transactions unfolded, their
    warnings bubbled up.

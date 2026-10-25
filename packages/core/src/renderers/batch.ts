@@ -17,7 +17,7 @@ function batchMode(flags: number | undefined): string {
 
 /**
  * Batch (XLS-56): one approval executes up to 8 inner transactions.
- * This is the newest blind-signing surface on XRPL — we unfold every inner
+ * This is the newest blind-signing surface on XRPL - we unfold every inner
  * transaction through the same pipeline so nothing hides inside a batch.
  */
 export function renderBatch(tx: Record<string, any>, ctx: RenderContext): DisplayIntent {

@@ -6,7 +6,7 @@ Suggested title: **Pre-proposal: Transaction Display Metadata (clear signing for
 
 ## Abstract
 
-A JSON metadata format that lets any XRPL wallet — software or hardware —
+A JSON metadata format that lets any XRPL wallet - software or hardware -
 render a transaction as human-readable intent with standardized risk
 annotations, instead of raw fields or a signing blob. Comparable in role to
 ERC-7730 on EVM, adapted to XRPL's fixed transaction schema.
@@ -27,11 +27,11 @@ signing UI that:
 - an AMMDeposit is single-sided with no `LPTokenOut`/`EPrice` bound.
 
 EVM addressed the equivalent problem with ERC-7730: reviewed display metadata
-consumed by wallets and devices. XRPL's case is simpler — a closed set of
-transaction types with known schemas rather than arbitrary calldata — and has
+consumed by wallets and devices. XRPL's case is simpler - a closed set of
+transaction types with known schemas rather than arbitrary calldata - and has
 no equivalent standard.
 
-## Specification (summary — full draft linked below)
+## Specification (summary - full draft linked below)
 
 1. **Display metadata document, one per transaction type**: a title, an
    intent template, an ordered field list (`path`, `label`, `format`), and

@@ -6,8 +6,8 @@
 
 ## Abstract
 
-A portable JSON metadata format that lets any XRPL wallet — software or
-hardware — render a transaction as human-readable intent with standardized risk
+A portable JSON metadata format that lets any XRPL wallet - software or
+hardware - render a transaction as human-readable intent with standardized risk
 annotations, instead of raw fields or hex. One registry, every wallet, down to
 the secure screen of a signing device.
 
@@ -16,8 +16,8 @@ the secure screen of a signing device.
 Every XRPL wallet today hand-rolls its own transaction rendering. The results
 are inconsistent, unaudited, and stop at the software layer: no XRPL
 transaction type has ever been "clear signed" on a hardware device's secure
-screen. Users approve TrustSet, OfferCreate, AMMDeposit, EscrowCreate and —
-since XLS-56 — entire *Batches* of transactions they cannot read.
+screen. Users approve TrustSet, OfferCreate, AMMDeposit, EscrowCreate and -
+since XLS-56 - entire *Batches* of transactions they cannot read.
 
 EVM solved this with ERC-7730: metadata that maps calldata to display intent,
 reviewed and distributed through a registry. XRPL has no equivalent, despite
@@ -187,7 +187,7 @@ Reference implementation: `toDeviceScreens()` in `packages/core/src/device.ts`.
 ## Extensibility
 
 New transaction types (MPT XLS-33, Credentials, Vault XLS-65, Lending XLS-66)
-add one metadata document each — no wallet code changes.
+add one metadata document each - no wallet code changes.
 
 ## Open questions
 

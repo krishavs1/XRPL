@@ -63,7 +63,7 @@ export function FeedPanel({ endpoint, onPick }: Props) {
       <div className="controls">
         <button onClick={() => setRunning((r) => !r)}>{running ? "Stop" : "Stream validated transactions"}</button>
         <span className="statusline" style={{ margin: 0 }}>
-          {running ? `streaming via ${endpoint.replace(/^wss:\/\//, "")} — click a row to decode it` : ""}
+          {running ? `streaming via ${endpoint.replace(/^wss:\/\//, "")} - click a row to decode it` : ""}
         </span>
       </div>
       {error && <p className="error-inline">{error}</p>}

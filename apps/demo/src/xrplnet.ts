@@ -1,7 +1,7 @@
 import { Client, Wallet, encode, getBalanceChanges } from "xrpl";
 import type { SimulationResult } from "xrpl-clear-signing";
 
-// Set VITE_XRPL_WSS in apps/demo/.env.local (gitignored — endpoint tokens stay
+// Set VITE_XRPL_WSS in apps/demo/.env.local (gitignored - endpoint tokens stay
 // out of the repo) to default every network call to that node, e.g. QuickNode.
 export const DEFAULT_WSS =
   ((import.meta as any).env?.VITE_XRPL_WSS as string | undefined) ??
@@ -30,7 +30,7 @@ async function connected(url: string): Promise<Client> {
  * CORS headers, but WebSocket connections aren't subject to CORS.
  */
 /**
- * Turn any transaction — including a signed, validated one off the live feed —
+ * Turn any transaction - including a signed, validated one off the live feed -
  * into a clean unsigned draft the ledger accepts for simulate/autofill:
  * - drop server response decorations (date, hash, ledger_index, ctid, …);
  *   real transaction fields are UpperCamelCase, decorations are lowercase;
@@ -139,7 +139,7 @@ let simAccount: Promise<string> | undefined;
  * `simulate` needs an existing source account but no signature, so a fresh
  * faucet address (no key kept) is enough. Created once per page load.
  */
-// Pre-funded, aged testnet account to simulate as (address only — simulate
+// Pre-funded, aged testnet account to simulate as (address only - simulate
 // needs no key). Aged matters: e.g. AccountDelete simulates tecTOO_SOON on an
 // account younger than ~256 ledgers. Faucet throwaway stays as the fallback.
 const DEMO_SIM_ACCOUNT = "rJnHWdT8XysFvZdJUziqmAQjrDraivV8Po";

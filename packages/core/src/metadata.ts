@@ -4,8 +4,8 @@ import { canonicalIssuersFor } from "./registry";
 
 /**
  * Interpreter for display metadata documents (spec: "Display metadata document").
- * A document fully describes how one transaction type renders — fields, intent
- * template, flag names and risk rules — so new types need no code changes.
+ * A document fully describes how one transaction type renders - fields, intent
+ * template, flag names and risk rules - so new types need no code changes.
  */
 
 const CONDITION_OPS = ["not", "and", "or", "gte", "eq", "flag", "missing", "verified", "impersonates", "requiresTag", "isXrp", "exactlyOneFlag"];
@@ -36,7 +36,7 @@ function hexToText(hex: string): string {
 }
 
 function formatValue(value: unknown, format: string, doc: MetadataDocument, registry: Registry): string {
-  if (value === undefined || value === null) return "—";
+  if (value === undefined || value === null) return "-";
   if (Array.isArray(value)) return value.map((v) => formatValue(v, format, doc, registry)).join(", ");
   if (format.startsWith("enum:")) {
     return doc.enums?.[format.slice(5)]?.[String(value)] ?? `unknown value (${value})`;
@@ -185,7 +185,7 @@ export function renderFromMetadata(doc: MetadataDocument, tx: Record<string, any
   const fields: DisplayField[] = [];
   const push = (f: MetadataField, label: string, raw: unknown) => {
     const value = formatValue(raw, f.format ?? "raw", doc, registry);
-    if (f.hideIfEmpty && (value === "" || value === "—")) return;
+    if (f.hideIfEmpty && (value === "" || value === "-")) return;
     const linked = fired.filter((r) => f.risks?.includes(r.code));
     const notes = linked.map((r) => r.short).filter(Boolean);
     fields.push({

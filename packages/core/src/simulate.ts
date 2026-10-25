@@ -12,7 +12,7 @@ export const DEFAULT_TESTNET_RPC = "https://s.altnet.rippletest.net:51234/";
 
 /**
  * Dry-run a transaction against current ledger state via the `simulate` RPC
- * (XLS-69, available since rippled 2.4.0 — no amendment required).
+ * (XLS-69, available since rippled 2.4.0 - no amendment required).
  * Fee / Sequence / SigningPubKey may be omitted; the server autofills them.
  */
 export async function simulateTx(
@@ -30,7 +30,7 @@ export async function simulateTx(
   try {
     if (r.meta) balanceChanges = getBalanceChanges(r.meta);
   } catch {
-    // meta shape unexpected — leave balanceChanges undefined
+    // meta shape unexpected - leave balanceChanges undefined
   }
   return {
     engineResult: r.engine_result ?? r.error ?? "unknown",
