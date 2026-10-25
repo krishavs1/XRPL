@@ -55,7 +55,7 @@ Being explicit, because it matters for a security tool:
 
 ```sh
 npm install
-npm test        # core library tests (9 passing)
+npm test        # core library tests
 npm run demo    # web demo at http://localhost:5173
 ```
 
@@ -94,8 +94,8 @@ PITCH.md        pitch notes and prize-track mapping
 
 ## Status
 
-- [x] Parser: 6 transaction types + safe fallback, 9 passing fixture tests
-- [x] Risk warnings incl. impersonation, partial-payment, Batch, AMM slippage
+- [x] Parser: 6 transaction types (TrustSet via a JSON metadata document) + safe fallback
+- [x] Risk warnings incl. impersonation, partial-payment, Batch, AMM deposit risks
 - [x] `simulate` (XLS-69) dry runs with projected balance changes
 - [x] Live ledger transaction feed (WebSocket `subscribe`)
 - [x] Device signing end-to-end via `device-signer-kit-xrp` on Speculos
@@ -105,3 +105,44 @@ PITCH.md        pitch notes and prize-track mapping
 - [ ] Point the demo at a QuickNode endpoint for the live feed + simulate
 - [ ] File the `FEEDBACK.md` findings as issues on `LedgerHQ/device-sdk-ts`
 - [ ] Record a fallback demo video
+
+### Spec vs. implementation gaps
+
+- [x] JSON metadata documents: TrustSet renders from
+      `packages/core/metadata/TrustSet.json` via the interpreter in
+      `src/metadata.ts`; callers can add types with `explain(tx, { metadata })`.
+- [ ] Move Payment, OfferCreate, EscrowCreate and AMMDeposit to metadata
+      documents (Batch stays code: it's a pipeline rule).
+- [ ] Device profile: the Ledger shows its own XRP app's rendering, not
+      `explain()` output; danger-first ordering and middle-out truncation
+      aren't implemented. Don't claim "same intent on the device screen" until
+      this is resolved.
+- [ ] Per-network registries: `issuers.json` is labelled mainnet but contains
+      the testnet RLUSD issuer, and `explain()` takes no network option. Split
+      the file and select by network.
+- [ ] Registry signing/pinning: the spec says "signed", the file is plain
+      JSON with no hash check.
+- [ ] Named flags for EscrowCreate and AMMDeposit (`flags` format).
+- [ ] Spec risk-code list is missing 7 codes the parser emits
+      (`MALFORMED_PARTIAL_XRP`, `ESCROW_NO_RELEASE_GATE`, `FILL_OR_KILL`,
+      `AMM_MODE_INVALID`, `SINGLE_SIDED_DEPOSIT`, `NO_DEPOSIT_BOUND`,
+      `POOL_SEEDING`).
+
+### Missing risk checks
+
+- [ ] Batch: flag inner transactions whose `Account` differs from the outer
+      signer (XLS-56 `BatchSigners`).
+- [ ] Payment: warn on unverified destinations and run currency
+      impersonation checks on issued `Amount` / `SendMax`.
+- [ ] Renderers for account-takeover / drain types: `SetRegularKey`,
+      `SignerListSet`, `AccountSet`, `AccountDelete` (currently raw fallback).
+- [ ] Turn `simulate` results into risk codes (non-`tesSUCCESS` result,
+      large XRP balance drop).
+
+### Housekeeping
+
+- [ ] Fill in the empty sections of `FEEDBACK.md`.
+- [ ] Tests for OfferCreate, EscrowCreate, `MISSING_DESTINATION_TAG`,
+      `simulateTx`, and AMM LP currency decoding.
+- [ ] Remove the dated "tomorrow" / "booth" wording from the READMEs after the
+      event.

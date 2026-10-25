@@ -48,4 +48,47 @@ export interface RenderContext {
   renderNested?: (tx: Record<string, any>) => DisplayIntent;
 }
 
-export type Renderer = (tx: Record<string, any>, ctx: RenderContext) => DisplayIntent;
+/** A structured risk condition: exactly one operator key per object. */
+export type RiskWhen =
+  | { not: RiskWhen }
+  | { and: RiskWhen[] }
+  | { or: RiskWhen[] }
+  | { gte: [string, number] }
+  | { flag: string }
+  | { missing: string }
+  | { verified: string }
+  | { impersonates: { currency: string; issuer: string } }
+  | { requiresTag: string };
+
+export interface MetadataField {
+  path: string;
+  label: string;
+  format?: string;
+  /** Risk codes that, when fired, mark this field (and append their `short` note) */
+  risks?: string[];
+  hideIfEmpty?: boolean;
+}
+
+export interface MetadataRisk {
+  code: string;
+  severity: RiskSeverity;
+  when: RiskWhen;
+  /** Template, e.g. "Issuer {LimitAmount.issuer|address} is not verified." */
+  message: string;
+  /** Short note appended to linked fields, e.g. "effectively unlimited" */
+  short?: string;
+}
+
+/** Display metadata document: one per transaction type (see spec). */
+export interface MetadataDocument {
+  version: string;
+  txType: string;
+  title: string;
+  /** Summary template: "{path}" or "{path|format}" */
+  intent: string;
+  flags?: Record<string, number>;
+  fields: MetadataField[];
+  risks?: MetadataRisk[];
+}
+
+export type Renderer =(tx: Record<string, any>, ctx: RenderContext) => DisplayIntent;

@@ -151,3 +151,63 @@ describe("explain: unknown type falls back safely", () => {
     expect(intent.fields.length).toBeGreaterThan(0);
   });
 });
+
+describe("display metadata documents", () => {
+  it("renders TrustSet fields from its metadata document", () => {
+    const intent = explain({
+      TransactionType: "TrustSet",
+      Account: ACCOUNT_ZERO,
+      Flags: 0x00020000,
+      LimitAmount: { currency: RLUSD_HEX, issuer: ACCOUNT_ONE, value: "1000000000" },
+    });
+    const field = (label: string) => intent.fields.find((f) => f.label === label);
+    expect(field("Currency")?.value).toBe("RLUSD");
+    expect(field("Issuer")?.risk).toBe("danger");
+    expect(field("Limit")?.value).toBe("1000000000 (effectively unlimited)");
+    expect(field("Flags")?.value).toBe("tfSetNoRipple");
+    expect(intent.summary).toMatch(/^Trust up to 1000000000 RLUSD issued by .* unknown account\.$/);
+  });
+
+  it("does not warn on a verified issuer with a normal limit", () => {
+    const intent = explain({
+      TransactionType: "TrustSet",
+      Account: ACCOUNT_ZERO,
+      LimitAmount: { currency: RLUSD_HEX, issuer: "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De", value: "1000" },
+    });
+    expect(intent.warnings).toEqual([]);
+    expect(intent.fields.map((f) => f.label)).not.toContain("Flags");
+  });
+
+  it("supports a new transaction type with no code changes", () => {
+    const intent = explain(
+      { TransactionType: "SetRegularKey", Account: ACCOUNT_ZERO, RegularKey: ACCOUNT_ONE },
+      {
+        metadata: [
+          {
+            version: "0.1",
+            txType: "SetRegularKey",
+            title: "Set regular key",
+            intent: "Let {RegularKey|account} sign for this account.",
+            fields: [{ path: "RegularKey", label: "New key", format: "account", risks: ["KEY_HANDOVER"] }],
+            risks: [
+              {
+                code: "KEY_HANDOVER",
+                severity: "danger",
+                when: { not: { missing: "RegularKey" } },
+                message: "{RegularKey|address} gets full control of this account.",
+              },
+            ],
+          },
+        ],
+      }
+    );
+    expect(intent.title).toBe("Set regular key");
+    expect(intent.warnings.map((w) => w.code)).toEqual(["KEY_HANDOVER"]);
+    expect(intent.fields[0].risk).toBe("danger");
+  });
+
+  it("rejects malformed documents at load time", () => {
+    const bad = { version: "0.1", txType: "X", title: "X", intent: "X", fields: [], risks: [{ code: "R", severity: "warn", when: { eval: "1" }, message: "" }] };
+    expect(() => explain({ TransactionType: "X" }, { metadata: [bad as any] })).toThrow(/condition/);
+  });
+});

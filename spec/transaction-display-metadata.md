@@ -35,26 +35,69 @@ One JSON document per transaction type:
   "version": "0.1",
   "txType": "TrustSet",
   "title": "Set trustline",
-  "intent": "Trust up to {LimitAmount.value} {LimitAmount.currency|currency} issued by {LimitAmount.issuer|account}",
+  "intent": "Trust up to {LimitAmount.value} {LimitAmount.currency|currency} issued by {LimitAmount.issuer|account}.",
+  "flags": { "tfSetNoRipple": 131072, "tfSetFreeze": 1048576 },
   "fields": [
     { "path": "LimitAmount.currency", "label": "Currency", "format": "currency" },
-    { "path": "LimitAmount.issuer",   "label": "Issuer",   "format": "account" },
-    { "path": "LimitAmount.value",    "label": "Limit",    "format": "decimal" }
+    { "path": "LimitAmount.issuer",   "label": "Issuer",   "format": "account", "risks": ["UNVERIFIED_ISSUER"] },
+    { "path": "LimitAmount.value",    "label": "Limit",    "format": "decimal", "risks": ["UNLIMITED_TRUSTLINE"] },
+    { "path": "Flags",                "label": "Flags",    "format": "flags",   "hideIfEmpty": true }
   ],
   "risks": [
-    { "code": "UNLIMITED_TRUSTLINE",      "when": "number(LimitAmount.value) >= 1e9", "severity": "danger" },
-    { "code": "UNVERIFIED_ISSUER",        "when": "!registry.verified(LimitAmount.issuer)", "severity": "danger" },
-    { "code": "CURRENCY_IMPERSONATION",   "when": "registry.canonicalIssuer(LimitAmount.currency) != LimitAmount.issuer", "severity": "danger" }
+    { "code": "UNVERIFIED_ISSUER", "severity": "danger",
+      "when": { "not": { "verified": "LimitAmount.issuer" } },
+      "message": "Issuer {LimitAmount.issuer|address} is not in the verified registry." },
+    { "code": "CURRENCY_IMPERSONATION", "severity": "danger",
+      "when": { "impersonates": { "currency": "LimitAmount.currency", "issuer": "LimitAmount.issuer" } },
+      "message": "\"{LimitAmount.currency|currency}\" is canonically issued by {LimitAmount.currency|canonicalIssuers}, but this trustline points at a different account." },
+    { "code": "UNLIMITED_TRUSTLINE", "severity": "danger",
+      "when": { "gte": ["LimitAmount.value", 1000000000] },
+      "short": "effectively unlimited",
+      "message": "Trustline limit is effectively unlimited: you accept any amount of this token." }
   ]
 }
 ```
+
+The complete document is `packages/core/metadata/TrustSet.json` in the
+reference implementation, which renders TrustSet from it with no
+type-specific code.
+
+- **Paths** are dotted field paths into the transaction JSON
+  (`LimitAmount.issuer`).
+- **Templates** (`intent`, `message`) substitute `{path}` or `{path|format}`.
+- **`flags`** maps flag names to bits for the `flags` format and the `flag`
+  condition.
+- **Field `risks`** link a field to risk codes: when one fires, the field is
+  marked with its severity and the risk's `short` note is appended to the value.
+- **`hideIfEmpty`** omits a field whose formatted value is empty.
+
+### Risk conditions
+
+`when` is a structured JSON condition, not an expression string: there is
+nothing to parse or `eval`, and a signing device can implement it in a few
+dozen lines. Each condition object has exactly one operator key:
+
+| Condition | True when |
+|---|---|
+| `{ "not": C }`, `{ "and": [C…] }`, `{ "or": [C…] }` | boolean composition |
+| `{ "gte": [path, n] }` | the field is numeric and ≥ `n` |
+| `{ "flag": name }` | the named bit (from `flags`) is set in `Flags` |
+| `{ "missing": path }` | the field is absent |
+| `{ "verified": path }` | the account at `path` is verified in the registry |
+| `{ "impersonates": { "currency": path, "issuer": path } }` | the currency name has verified canonical issuer(s) in the registry and the issuer is none of them |
+| `{ "requiresTag": path }` | the registry marks the account as requiring a destination tag |
+
+Implementations MUST reject a document with an unknown operator, format, or
+field-risk reference at load time rather than skip the rule while signing.
 
 ### Formats
 
 `currency` (160-bit code → name, with AMM-LP detection), `account` (registry
 name + verified mark + truncated address), `amount` (drops → XRP; issued
 amounts with issuer attribution), `rippleTime` (epoch 946684800 → ISO-8601),
-`decimal`, `flags` (named bits).
+`decimal`, `flags` (named bits), `address` (truncated address, no registry
+lookup), `canonicalIssuers` (a currency's verified issuers, for messages),
+`raw`.
 
 ### Account registry
 
@@ -104,5 +147,6 @@ add one metadata document each — no wallet code changes.
 
 - Registry governance: who reviews entries? (ERC-7730 precedent: PR review in a
   public repo + wallet-side pinning.)
-- Field-path expression language: keep the minimal subset above vs. JSONPath.
+- Field paths: dotted paths cover today's schema; array indexing (e.g.
+  `Memos[0]`) is not yet specified.
 - Localization of `title`/`intent` templates.

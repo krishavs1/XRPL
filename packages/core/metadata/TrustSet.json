@@ -1,0 +1,40 @@
+{
+  "version": "0.1",
+  "txType": "TrustSet",
+  "title": "Set trustline",
+  "intent": "Trust up to {LimitAmount.value} {LimitAmount.currency|currency} issued by {LimitAmount.issuer|account}.",
+  "flags": {
+    "tfSetfAuth": 65536,
+    "tfSetNoRipple": 131072,
+    "tfClearNoRipple": 262144,
+    "tfSetFreeze": 1048576,
+    "tfClearFreeze": 2097152
+  },
+  "fields": [
+    { "path": "LimitAmount.currency", "label": "Currency", "format": "currency" },
+    { "path": "LimitAmount.issuer", "label": "Issuer", "format": "account", "risks": ["UNVERIFIED_ISSUER"] },
+    { "path": "LimitAmount.value", "label": "Limit", "format": "decimal", "risks": ["UNLIMITED_TRUSTLINE"] },
+    { "path": "Flags", "label": "Flags", "format": "flags", "hideIfEmpty": true }
+  ],
+  "risks": [
+    {
+      "code": "UNVERIFIED_ISSUER",
+      "severity": "danger",
+      "when": { "not": { "verified": "LimitAmount.issuer" } },
+      "message": "Issuer {LimitAmount.issuer|address} is not in the verified registry."
+    },
+    {
+      "code": "CURRENCY_IMPERSONATION",
+      "severity": "danger",
+      "when": { "impersonates": { "currency": "LimitAmount.currency", "issuer": "LimitAmount.issuer" } },
+      "message": "\"{LimitAmount.currency|currency}\" is canonically issued by {LimitAmount.currency|canonicalIssuers}, but this trustline points at a different account. Likely a scam token."
+    },
+    {
+      "code": "UNLIMITED_TRUSTLINE",
+      "severity": "danger",
+      "when": { "gte": ["LimitAmount.value", 1000000000] },
+      "short": "effectively unlimited",
+      "message": "Trustline limit is effectively unlimited: you accept any amount of this token."
+    }
+  ]
+}
