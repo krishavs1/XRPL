@@ -14,6 +14,23 @@ device.
 > you're signing can't render XRPL transactions. That setting existing is our
 > project's reason to exist.
 
+## The precedent (one breath)
+
+> Ethereum answered blind signing with ERC-7730 after it cost the industry
+> billions — Bybit alone was $1.5B (Feb 2025, the largest crypto theft ever),
+> signed on hardware wallets that couldn't render intent. XRPL has no
+> equivalent standard. We wrote it, with the reference parser, a risk-code
+> vocabulary ERC-7730 doesn't even have, and it's running against a Ledger
+> device right now.
+
+Lineage if asked: EIP-712 (2017, structured messages only) → years of drainer
+attacks → Ledger's Clear Signing Initiative + ERC-7730 (2024): JSON display
+metadata per contract, reviewed into a public GitHub registry, consumed by the
+device's secure screen. XRPL is the *easier* version of this problem — a fixed
+set of transaction types instead of arbitrary calldata — and had nothing. Our
+additions beyond a port: standardized risk annotations and Batch recursion
+rules, which ERC-7730 doesn't define.
+
 ## Core pitch beats
 
 1. **The hole:** every XRPL wallet hand-rolls its own transaction rendering —

@@ -4,6 +4,7 @@ import { explain, type DisplayIntent, type SimulationResult } from "xrpl-clear-s
 import { DEFAULT_WSS, simulateViaWs } from "./xrplnet";
 import { samples, PLACEHOLDER_ACCOUNT } from "./samples";
 import { LedgerPanel } from "./LedgerPanel";
+import { FeedPanel } from "./FeedPanel";
 
 function IntentView({ intent, nested = false }: { intent: DisplayIntent; nested?: boolean }) {
   return (
@@ -132,6 +133,13 @@ export function App() {
               <pre>{hex}</pre>
             </details>
           )}
+          <FeedPanel
+            endpoint={endpoint}
+            onPick={(tx) => {
+              setInput(JSON.stringify(tx, null, 2));
+              setSim(null);
+            }}
+          />
         </section>
         <section className="pane">
           {result.error && <div className="error-inline">cannot parse input: {result.error}</div>}

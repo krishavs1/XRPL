@@ -119,3 +119,14 @@ details.hexview pre {
 .speculos .hint { color: var(--muted); font-size: 11.5px; margin: 4px 0; }
 .speculos-buttons { display: flex; gap: 6px; margin-top: 6px; }
 .error-inline { color: var(--danger-text); font-family: var(--mono); font-size: 12px; padding: 8px 0; }
+
+.feed { border-top: 1px solid var(--border); margin-top: 4px; }
+.feedrow {
+  display: grid; grid-template-columns: 70px 130px 1fr; gap: 10px; width: 100%;
+  text-align: left; background: none; border: none; border-bottom: 1px solid var(--border-soft);
+  border-radius: 0; padding: 4px 2px; font: 11.5px var(--mono); color: var(--text); cursor: pointer;
+}
+.feedrow:hover { background: var(--panel); border-color: var(--border-soft); }
+.feedrow .t { color: #55585e; }
+.feedrow .ty { color: var(--green-light); }
+.feedrow .a { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
