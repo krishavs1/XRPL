@@ -1,14 +1,11 @@
 /**
- * END-TO-END Ledger bounty flow using the PRE-RELEASE device-signer-kit-xrp
- * (the kit the bounty brief asks for) against Speculos:
+ * End-to-end Ledger flow using the pre-release device-signer-kit-xrp against
+ * Speculos. It renders the Clear Signing preview, signs on the device, and
+ * submits the transaction on testnet.
  *
- *   Clear Signing preview → device signature → submitted testnet transaction.
- *
- * 1. Start the emulator:  cd vendor/ledger-workshop/xrpl-hackathon/speculos && ./run-speculos.sh stax
- * 2. Run:                 npx tsx harness/sign-dmk.ts
- * 3. Approve on the Speculos screen (web: http://127.0.0.1:5000, or the VNC viewer).
- *
- * Every rough edge in the kit goes in FEEDBACK.md + an issue on LedgerHQ/device-sdk-ts.
+ * 1. Start the emulator with cd vendor/ledger-workshop/xrpl-hackathon/speculos && ./run-speculos.sh stax
+ * 2. Run npx tsx harness/sign-dmk.ts
+ * 3. Approve on the Speculos screen at http://127.0.0.1:5000 or the VNC viewer
  */
 import {
   DeviceActionStatus,

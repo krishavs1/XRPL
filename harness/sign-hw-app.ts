@@ -1,12 +1,11 @@
 /**
- * Ledger signing harness - works against Speculos (emulator) or can be adapted
+ * Ledger signing harness. Works against Speculos (emulator) or can be adapted
  * to a physical device via @ledgerhq/hw-transport-node-hid.
  *
- * Flow: derive pubkey from device → render Clear Signing preview in the
- * terminal → encode tx → sign on device → print submit-ready blob.
+ * It derives the pubkey from the device, renders the Clear Signing preview in
+ * the terminal, encodes the tx, signs on device, and prints a submit-ready blob.
  *
- * Run Speculos first (see harness/README.md), then:
- *   npx tsx harness/sign-hw-app.ts
+ * Start Speculos first, then run npx tsx harness/sign-hw-app.ts
  */
 import SpeculosHttpTransport from "@ledgerhq/hw-transport-node-speculos-http";
 import Xrp from "@ledgerhq/hw-app-xrp";
@@ -54,6 +53,6 @@ async function main() {
 
 main().catch((e) => {
   console.error("Harness failed:", e.message ?? e);
-  console.error("Is Speculos running with the XRP app? See harness/README.md");
+  console.error("Is Speculos running with the XRP app?");
   process.exit(1);
 });

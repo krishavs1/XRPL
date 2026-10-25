@@ -73,7 +73,7 @@ export function App() {
   const [endpoint, setEndpoint] = useState(DEFAULT_WSS);
   const [sim, setSim] = useState<SimulationResult | null>(null);
   // Don't surface the review's danger/warning count until the user has actually
-  // opened Review — otherwise the pre-selected scenario makes the nav look like
+  // opened Review - otherwise the pre-selected scenario makes the nav look like
   // it pre-judged before you did anything.
   const [reviewed, setReviewed] = useState(false);
   const [deviceAccount, setDeviceAccount] = useState("");
