@@ -1,0 +1,75 @@
+{
+  "version": "0.1",
+  "txType": "AMMDeposit",
+  "title": "Deposit into AMM pool",
+  "intent": [
+    {
+      "when": { "flag": "tfTwoAssetIfEmpty" },
+      "text": "Seed the empty {Asset|issue} / {Asset2|issue} pool with {Amount|amount} + {Amount2|amount}."
+    },
+    { "text": "Deposit {Amount|amount} into the {Asset|issue} / {Asset2|issue} pool." }
+  ],
+  "flags": {
+    "tfLPToken": 65536,
+    "tfSingleAsset": 524288,
+    "tfTwoAsset": 1048576,
+    "tfOneAssetLPToken": 2097152,
+    "tfLimitLPToken": 4194304,
+    "tfTwoAssetIfEmpty": 8388608
+  },
+  "fields": [
+    { "path": "Asset", "label": "Pool asset 1", "format": "issue" },
+    { "path": "Asset2", "label": "Pool asset 2", "format": "issue" },
+    { "path": "Flags", "label": "Mode", "format": "flags", "risks": ["AMM_MODE_INVALID"] },
+    { "path": "Amount", "label": "Deposit", "format": "amount", "hideIfEmpty": true },
+    { "path": "Amount2", "label": "Deposit (2nd asset)", "format": "amount", "hideIfEmpty": true },
+    { "path": "LPTokenOut", "label": "LP tokens out", "format": "amount", "hideIfEmpty": true },
+    { "path": "EPrice", "label": "Max effective price", "format": "amount", "hideIfEmpty": true }
+  ],
+  "risks": [
+    {
+      "code": "AMM_MODE_INVALID",
+      "severity": "danger",
+      "when": {
+        "not": {
+          "exactlyOneFlag": [
+            "tfLPToken",
+            "tfSingleAsset",
+            "tfTwoAsset",
+            "tfOneAssetLPToken",
+            "tfLimitLPToken",
+            "tfTwoAssetIfEmpty"
+          ]
+        }
+      },
+      "short": "invalid mode",
+      "message": "AMMDeposit requires exactly one deposit-mode flag; the ledger will reject this transaction (temMALFORMED)."
+    },
+    {
+      "code": "SINGLE_SIDED_DEPOSIT",
+      "severity": "warn",
+      "when": {
+        "or": [{ "flag": "tfSingleAsset" }, { "flag": "tfOneAssetLPToken" }, { "flag": "tfLimitLPToken" }]
+      },
+      "message": "Single-sided deposit: part of your asset is effectively swapped inside the pool (fee + slippage), so you receive less pool share than a balanced deposit of equal value."
+    },
+    {
+      "code": "NO_DEPOSIT_BOUND",
+      "severity": "warn",
+      "when": {
+        "and": [
+          { "or": [{ "flag": "tfSingleAsset" }, { "flag": "tfOneAssetLPToken" }, { "flag": "tfLimitLPToken" }] },
+          { "missing": "LPTokenOut" },
+          { "missing": "EPrice" }
+        ]
+      },
+      "message": "No LPTokenOut or EPrice bound set: there is no guaranteed minimum on what this deposit returns."
+    },
+    {
+      "code": "POOL_SEEDING",
+      "severity": "danger",
+      "when": { "flag": "tfTwoAssetIfEmpty" },
+      "message": "Seeding an empty pool: your two amounts set the pool's starting price. A ratio off from market price is an immediate arbitrage loss."
+    }
+  ]
+}

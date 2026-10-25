@@ -61,6 +61,10 @@ export type RiskWhen =
   | { missing: string }
   | { verified: string }
   | { impersonates: { currency: string; issuer: string } }
+  /** The value at this path is a native-XRP amount (a plain string, not an issued-amount object) */
+  | { isXrp: string }
+  /** Exactly one of these named flags is set (mutually exclusive mode flags) */
+  | { exactlyOneFlag: string[] }
   | { requiresTag: string };
 
 export interface MetadataField {

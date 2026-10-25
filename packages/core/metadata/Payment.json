@@ -1,0 +1,53 @@
+{
+  "version": "0.1",
+  "txType": "Payment",
+  "title": "Send payment",
+  "intent": [
+    {
+      "when": { "flag": "tfPartialPayment" },
+      "text": "Send up to {Amount|amount} to {Destination|account} (partial payment!)."
+    },
+    { "text": "Send {Amount|amount} to {Destination|account}." }
+  ],
+  "flags": {
+    "tfNoRippleDirect": 65536,
+    "tfPartialPayment": 131072,
+    "tfLimitQuality": 262144
+  },
+  "fields": [
+    { "path": "Destination", "label": "To", "format": "account" },
+    { "path": "Amount", "label": "Amount", "format": "amount", "risks": ["PARTIAL_PAYMENT"] },
+    { "path": "DeliverMax", "label": "Amount (deliver max)", "format": "amount", "hideIfEmpty": true },
+    { "path": "SendMax", "label": "Send max", "format": "amount", "hideIfEmpty": true },
+    { "path": "DeliverMin", "label": "Deliver at least", "format": "amount", "hideIfEmpty": true },
+    { "path": "DestinationTag", "label": "Destination tag", "format": "decimal", "hideIfEmpty": true },
+    { "path": "Flags", "label": "Flags", "format": "flags", "hideIfEmpty": true }
+  ],
+  "risks": [
+    {
+      "code": "PARTIAL_PAYMENT",
+      "severity": "danger",
+      "when": { "flag": "tfPartialPayment" },
+      "short": "partial",
+      "message": "Partial payment: the recipient may receive LESS than the stated Amount. Never trust the Amount field of a partial payment."
+    },
+    {
+      "code": "MALFORMED_PARTIAL_XRP",
+      "severity": "danger",
+      "when": {
+        "and": [
+          { "flag": "tfPartialPayment" },
+          { "isXrp": "Amount" },
+          { "or": [{ "missing": "SendMax" }, { "isXrp": "SendMax" }] }
+        ]
+      },
+      "message": "Malformed: a direct XRP-to-XRP payment cannot be partial. The ledger will reject this transaction (temBAD_SEND_XRP_PARTIAL) - but a hardware device will still sign it."
+    },
+    {
+      "code": "MISSING_DESTINATION_TAG",
+      "severity": "warn",
+      "when": { "and": [{ "requiresTag": "Destination" }, { "missing": "DestinationTag" }] },
+      "message": "{Destination|account} requires a destination tag; funds sent without one may be lost or delayed."
+    }
+  ]
+}

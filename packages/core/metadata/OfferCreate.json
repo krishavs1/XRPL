@@ -1,0 +1,26 @@
+{
+  "version": "0.1",
+  "txType": "OfferCreate",
+  "title": "Place DEX offer",
+  "intent": "Offer {TakerGets|amount} in exchange for {TakerPays|amount} on the XRPL DEX.",
+  "flags": {
+    "tfPassive": 65536,
+    "tfImmediateOrCancel": 131072,
+    "tfFillOrKill": 262144,
+    "tfSell": 524288
+  },
+  "fields": [
+    { "path": "TakerGets", "label": "You give", "format": "amount" },
+    { "path": "TakerPays", "label": "You receive", "format": "amount" },
+    { "path": "Expiration", "label": "Expires", "format": "rippleTime", "hideIfEmpty": true },
+    { "path": "Flags", "label": "Flags", "format": "flags", "hideIfEmpty": true }
+  ],
+  "risks": [
+    {
+      "code": "FILL_OR_KILL",
+      "severity": "info",
+      "when": { "flag": "tfFillOrKill" },
+      "message": "Fill-or-kill: executes completely now or not at all."
+    }
+  ]
+}

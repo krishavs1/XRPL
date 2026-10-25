@@ -98,6 +98,8 @@ dozen lines. Each condition object has exactly one operator key:
 | `{ "verified": path }` | the account at `path` is verified in the registry |
 | `{ "impersonates": { "currency": path, "issuer": path } }` | the currency name has verified canonical issuer(s) in the registry and the issuer is none of them |
 | `{ "requiresTag": path }` | the registry marks the account as requiring a destination tag |
+| `{ "isXrp": path }` | the value is a native-XRP amount (a plain string, not an issued-amount object) |
+| `{ "exactlyOneFlag": [names…] }` | exactly one of the named flags is set (mutually exclusive mode flags) |
 
 Implementations MUST reject a document with an unknown operator, format, or
 field-risk reference at load time rather than skip the rule while signing.
@@ -110,7 +112,12 @@ amounts with issuer attribution), `rippleTime` (epoch 946684800 → ISO-8601),
 `decimal`, `flags` (named bits), `enum:<name>` (a value looked up in the
 document's `enums`), `hexText` (hex-encoded ASCII such as `Domain` → text),
 `address` (truncated address, no registry lookup), `canonicalIssuers` (a
-currency's verified issuers, for messages), `raw`.
+currency's verified issuers, for messages), `issue` (an `{currency, issuer?}`
+pool-side object, e.g. AMM `Asset`/`Asset2`), `raw`.
+
+The reference implementation renders nine transaction types entirely from
+metadata documents; the only hand-written renderer is Batch, which the
+Composition section defines as a pipeline rule rather than per-type metadata.
 
 ### Account registry
 
@@ -189,4 +196,7 @@ add one metadata document each — no wallet code changes.
 - Field paths: `*` maps over arrays for display, but conditions over arrays
   (e.g. "any signer is unverified") and indexing (`Memos[0]`) are not yet
   specified.
+- Computed display values: an OfferCreate's effective price (TakerPays ÷
+  TakerGets) is useful to show but needs arithmetic the format language
+  deliberately does not have yet (ERC-7730 faces the same boundary).
 - Localization of `title`/`intent` templates.

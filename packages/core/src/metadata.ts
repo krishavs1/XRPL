@@ -8,8 +8,8 @@ import { canonicalIssuersFor } from "./registry";
  * template, flag names and risk rules — so new types need no code changes.
  */
 
-const CONDITION_OPS = ["not", "and", "or", "gte", "eq", "flag", "missing", "verified", "impersonates", "requiresTag"];
-const FORMATS = ["raw", "decimal", "currency", "account", "address", "amount", "rippleTime", "flags", "canonicalIssuers", "hexText"];
+const CONDITION_OPS = ["not", "and", "or", "gte", "eq", "flag", "missing", "verified", "impersonates", "requiresTag", "isXrp", "exactlyOneFlag"];
+const FORMATS = ["raw", "decimal", "currency", "account", "address", "amount", "rippleTime", "flags", "canonicalIssuers", "hexText", "issue"];
 
 /**
  * Resolve a dotted field path ("LimitAmount.issuer") against a transaction.
@@ -60,6 +60,14 @@ function formatValue(value: unknown, format: string, doc: MetadataDocument, regi
         .join(", ");
     case "hexText":
       return hexToText(String(value));
+    case "issue": {
+      // An Issue object ({currency, issuer?}), e.g. an AMM pool side
+      const v = value as { currency?: string; issuer?: string };
+      if (typeof v !== "object") return String(value);
+      const name = decodeCurrency(String(v.currency ?? "?"));
+      if (name === "XRP") return "XRP";
+      return v.issuer ? `${name} (${formatAccount(v.issuer, registry)})` : name;
+    }
     default: // raw, decimal
       return String(value);
   }
@@ -105,6 +113,16 @@ function evaluate(when: RiskWhen, tx: Record<string, any>, doc: MetadataDocument
     }
     case "requiresTag":
       return registry.accounts[String(resolvePath(tx, arg))]?.requiresDestinationTag === true;
+    case "isXrp":
+      return typeof resolvePath(tx, arg) === "string";
+    case "exactlyOneFlag": {
+      const flags = Number(tx.Flags ?? 0);
+      const set = (arg as string[]).filter((name) => {
+        const bit = doc.flags?.[name];
+        return bit !== undefined && (flags & bit) === bit;
+      });
+      return set.length === 1;
+    }
     default:
       throw new Error(`Unknown condition "${op}"`);
   }

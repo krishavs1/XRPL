@@ -7,26 +7,36 @@ import setRegularKeyMetadata from "../metadata/SetRegularKey.json";
 import signerListSetMetadata from "../metadata/SignerListSet.json";
 import accountSetMetadata from "../metadata/AccountSet.json";
 import accountDeleteMetadata from "../metadata/AccountDelete.json";
-import { renderPayment } from "./renderers/payment";
-import { renderOfferCreate } from "./renderers/offercreate";
-import { renderEscrowCreate } from "./renderers/escrowcreate";
-import { renderAMMDeposit } from "./renderers/ammdeposit";
+import paymentMetadata from "../metadata/Payment.json";
+import offerCreateMetadata from "../metadata/OfferCreate.json";
+import escrowCreateMetadata from "../metadata/EscrowCreate.json";
+import ammDepositMetadata from "../metadata/AMMDeposit.json";
 import { renderBatch } from "./renderers/batch";
 import { renderFallback } from "./renderers/fallback";
 
 /** Built-in display metadata documents, keyed by transaction type. */
 const builtinMetadata: Record<string, MetadataDocument> = Object.fromEntries(
-  [trustSetMetadata, setRegularKeyMetadata, signerListSetMetadata, accountSetMetadata, accountDeleteMetadata]
+  [
+    trustSetMetadata,
+    setRegularKeyMetadata,
+    signerListSetMetadata,
+    accountSetMetadata,
+    accountDeleteMetadata,
+    paymentMetadata,
+    offerCreateMetadata,
+    escrowCreateMetadata,
+    ammDepositMetadata,
+  ]
     .map((d) => d as unknown as MetadataDocument)
     .map((d) => [d.txType, validateMetadata(d)])
 );
 
-/** Types not (yet) expressible as metadata: hand-written renderers. */
+/**
+ * Batch is the one hand-written renderer by design: the spec defines it as a
+ * composition rule (inner transactions recurse through the whole pipeline),
+ * not as per-type display metadata.
+ */
 const renderers: Record<string, Renderer> = {
-  Payment: renderPayment,
-  OfferCreate: renderOfferCreate,
-  EscrowCreate: renderEscrowCreate,
-  AMMDeposit: renderAMMDeposit,
   Batch: renderBatch,
 };
 

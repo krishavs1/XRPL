@@ -1,0 +1,21 @@
+{
+  "version": "0.1",
+  "txType": "EscrowCreate",
+  "title": "Create escrow",
+  "intent": "Lock {Amount|amount} for {Destination|account}.",
+  "fields": [
+    { "path": "Amount", "label": "Lock", "format": "amount" },
+    { "path": "Destination", "label": "Releasable to", "format": "account" },
+    { "path": "FinishAfter", "label": "Releasable after", "format": "rippleTime", "hideIfEmpty": true },
+    { "path": "CancelAfter", "label": "Refundable after", "format": "rippleTime", "hideIfEmpty": true },
+    { "path": "Condition", "label": "Crypto-condition", "format": "raw", "hideIfEmpty": true }
+  ],
+  "risks": [
+    {
+      "code": "ESCROW_NO_RELEASE_GATE",
+      "severity": "warn",
+      "when": { "and": [{ "missing": "FinishAfter" }, { "missing": "Condition" }] },
+      "message": "No FinishAfter time and no condition: check how these funds are meant to be released."
+    }
+  ]
+}
