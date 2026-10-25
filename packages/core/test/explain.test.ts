@@ -48,7 +48,7 @@ describe("explain: malicious TrustSet", () => {
 });
 
 describe("explain: partial payment", () => {
-  it("flags tfPartialPayment", () => {
+  it("flags tfPartialPayment and the XRP→XRP malformation", () => {
     const intent = explain({
       TransactionType: "Payment",
       Account: ACCOUNT_ZERO,
@@ -56,7 +56,23 @@ describe("explain: partial payment", () => {
       Amount: "1000000000",
       Flags: 0x00020000,
     });
-    expect(intent.warnings.map((w) => w.code)).toContain("PARTIAL_PAYMENT");
+    const codes = intent.warnings.map((w) => w.code);
+    expect(codes).toContain("PARTIAL_PAYMENT");
+    expect(codes).toContain("MALFORMED_PARTIAL_XRP");
+  });
+
+  it("does not flag a cross-currency partial payment as malformed", () => {
+    const intent = explain({
+      TransactionType: "Payment",
+      Account: ACCOUNT_ZERO,
+      Destination: ACCOUNT_ONE,
+      Amount: { currency: RLUSD_HEX, issuer: ACCOUNT_ONE, value: "100" },
+      SendMax: "120000000",
+      Flags: 0x00020000,
+    });
+    const codes = intent.warnings.map((w) => w.code);
+    expect(codes).toContain("PARTIAL_PAYMENT");
+    expect(codes).not.toContain("MALFORMED_PARTIAL_XRP");
   });
 });
 

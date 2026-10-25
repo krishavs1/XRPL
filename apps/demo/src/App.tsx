@@ -1,39 +1,40 @@
 import { useMemo, useState } from "react";
-import {
-  DEFAULT_TESTNET_RPC,
-  explain,
-  simulateTx,
-  type DisplayIntent,
-  type SimulationResult,
-} from "xrpl-clear-signing";
+import { encode } from "xrpl";
+import { explain, type DisplayIntent, type SimulationResult } from "xrpl-clear-signing";
+import { DEFAULT_WSS, simulateViaWs } from "./xrplnet";
 import { samples } from "./samples";
+import { LedgerPanel } from "./LedgerPanel";
 
-function IntentCard({ intent, nested = false }: { intent: DisplayIntent; nested?: boolean }) {
+function IntentView({ intent, nested = false }: { intent: DisplayIntent; nested?: boolean }) {
   return (
-    <div className={nested ? "card nested" : "card"}>
-      <h2>{intent.title}</h2>
-      <p className="summary">{intent.summary}</p>
-      {intent.warnings.length > 0 && (
-        <ul className="warnings">
-          {intent.warnings.map((w, i) => (
-            <li key={i} className={`warning ${w.severity}`}>
-              <strong>{w.code}</strong> {w.message}
-            </li>
-          ))}
-        </ul>
-      )}
-      <table>
-        <tbody>
-          {intent.fields.map((f, i) => (
-            <tr key={i} className={f.risk ? `risk-${f.risk}` : ""}>
-              <td className="label">{f.label}</td>
-              <td>{f.value}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className={nested ? "inner" : undefined}>
+      {!nested &&
+        intent.warnings.map((w, i) => (
+          <div key={i} className={`band ${w.severity}`}>
+            <code>{w.code}</code> {w.message}
+          </div>
+        ))}
+      <p className="intent-title">
+        {intent.title}
+        <span className="txtype">{intent.txType}</span>
+      </p>
+      <p className="intent-summary">{intent.summary}</p>
+      {nested &&
+        intent.warnings.map((w, i) => (
+          <div key={i} className={`band ${w.severity}`}>
+            <code>{w.code}</code> {w.message}
+          </div>
+        ))}
+      <div className="rows">
+        {intent.fields.map((f, i) => (
+          <div key={i} className={`rowline${f.risk ? ` ${f.risk}` : ""}`}>
+            <span className="k">{f.label}</span>
+            <span className="v">{f.value}</span>
+          </div>
+        ))}
+      </div>
       {intent.inner?.map((inner, i) => (
-        <IntentCard key={i} intent={inner} nested />
+        <IntentView key={i} intent={inner} nested />
       ))}
     </div>
   );
@@ -41,7 +42,7 @@ function IntentCard({ intent, nested = false }: { intent: DisplayIntent; nested?
 
 export function App() {
   const [input, setInput] = useState(JSON.stringify(samples[0].tx, null, 2));
-  const [endpoint, setEndpoint] = useState(DEFAULT_TESTNET_RPC);
+  const [endpoint, setEndpoint] = useState(DEFAULT_WSS);
   const [sim, setSim] = useState<SimulationResult | null>(null);
   const [simBusy, setSimBusy] = useState(false);
 
@@ -53,12 +54,23 @@ export function App() {
     }
   }, [input]);
 
+  const inputIsHex = !input.trim().startsWith("{");
+  const hex = useMemo(() => {
+    if (!result.intent) return null;
+    if (inputIsHex) return input.trim();
+    try {
+      return encode(result.intent.raw as any);
+    } catch {
+      return null; // partial tx (missing required fields) — fine before autofill
+    }
+  }, [result.intent, input, inputIsHex]);
+
   async function runSimulation() {
     if (!result.intent) return;
     setSimBusy(true);
     setSim(null);
     try {
-      setSim(await simulateTx(result.intent.raw as Record<string, unknown>, endpoint));
+      setSim(await simulateViaWs(endpoint, result.intent.raw as Record<string, unknown>));
     } catch (e) {
       setSim({ engineResult: "request failed", message: (e as Error).message, raw: {} });
     } finally {
@@ -67,67 +79,92 @@ export function App() {
   }
 
   return (
-    <main>
+    <>
       <header>
-        <h1>XRPL Clear Signing</h1>
-        <p>
-          Paste a signing blob (hex) or transaction JSON. See what you are actually signing —
-          decoded, risk-checked, and dry-run against the live ledger.
-        </p>
+        <h1>xrpl-clear-signing</h1>
+        <span className="meta">transaction display metadata for XRPL · draft spec + reference parser · testnet</span>
       </header>
-      <div className="columns">
-        <section>
-          <div className="samples">
-            {samples.map((s) => (
-              <button key={s.name} onClick={() => setInput(JSON.stringify(s.tx, null, 2))}>
-                {s.name}
-              </button>
-            ))}
+      <main>
+        <section className="pane left">
+          <div className="toolbar">
+            <select
+              value=""
+              onChange={(e) => {
+                const s = samples.find((x) => x.name === e.target.value);
+                if (s) {
+                  setInput(JSON.stringify(s.tx, null, 2));
+                  setSim(null);
+                }
+              }}
+            >
+              <option value="" disabled>
+                Load fixture…
+              </option>
+              {samples.map((s) => (
+                <option key={s.name} value={s.name}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
           </div>
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             spellCheck={false}
-            rows={22}
+            aria-label="Transaction JSON or signing blob hex"
           />
-          <div className="simulate">
-            <input
-              value={endpoint}
-              onChange={(e) => setEndpoint(e.target.value)}
-              placeholder="JSON-RPC endpoint (QuickNode or public testnet)"
-            />
-            <button onClick={runSimulation} disabled={simBusy || !result.intent}>
-              {simBusy ? "Simulating…" : "Simulate (XLS-69)"}
-            </button>
-          </div>
-        </section>
-        <section>
-          {result.error && <div className="card error">Cannot parse input: {result.error}</div>}
-          {result.intent && <IntentCard intent={result.intent} />}
-          {sim && (
-            <div className="card">
-              <h2>Dry run (simulate)</h2>
-              <p className="summary">
-                Result: <strong>{sim.engineResult}</strong>
-                {sim.message ? ` — ${sim.message}` : ""}
-              </p>
-              {sim.balanceChanges?.map((bc) => (
-                <div key={bc.account}>
-                  <p className="label">{bc.account}</p>
-                  <ul>
-                    {bc.balances.map((b, i) => (
-                      <li key={i}>
-                        {Number(b.value) >= 0 ? "+" : ""}
-                        {b.value} {b.currency}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
+          <p className="input-meta">
+            {inputIsHex
+              ? `input: signing blob · ${Math.floor(input.trim().length / 2)} bytes`
+              : `input: tx JSON${hex ? ` · serializes to ${hex.length / 2} bytes` : " · not yet serializable (pre-autofill)"}`}
+          </p>
+          {hex && !inputIsHex && (
+            <details className="hexview">
+              <summary>serialized hex</summary>
+              <pre>{hex}</pre>
+            </details>
           )}
         </section>
-      </div>
-    </main>
+        <section className="pane">
+          {result.error && <div className="error-inline">cannot parse input: {result.error}</div>}
+          {result.intent && <IntentView intent={result.intent} />}
+
+          <div className="section">
+            <h2>Dry run — simulate (XLS-69)</h2>
+            <div className="controls">
+              <input
+                value={endpoint}
+                onChange={(e) => setEndpoint(e.target.value)}
+                aria-label="JSON-RPC endpoint"
+              />
+              <button onClick={runSimulation} disabled={simBusy || !result.intent}>
+                {simBusy ? "simulating…" : "simulate"}
+              </button>
+            </div>
+            {sim && (
+              <div className="simresult">
+                <span className={sim.engineResult === "tesSUCCESS" ? "ok" : "bad"}>
+                  {sim.engineResult}
+                </span>
+                {sim.message ? ` — ${sim.message}` : ""}
+                {sim.balanceChanges?.map((bc) => (
+                  <div key={bc.account}>
+                    {bc.account}:{" "}
+                    {bc.balances
+                      .map((b) => `${Number(b.value) >= 0 ? "+" : ""}${b.value} ${b.currency}`)
+                      .join(", ")}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <LedgerPanel
+            tx={(result.intent?.raw as Record<string, unknown>) ?? null}
+            onPrepared={(tx) => setInput(JSON.stringify(tx, null, 2))}
+          />
+        </section>
+      </main>
+    </>
   );
 }

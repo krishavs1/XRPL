@@ -32,6 +32,17 @@ export function renderPayment(tx: Record<string, any>, ctx: RenderContext): Disp
       severity: "danger",
       message: "Partial payment: the recipient may receive LESS than the stated Amount. Never trust the Amount field of a partial payment.",
     });
+    // Direct XRP→XRP payments cannot be partial: rippled rejects them as malformed.
+    const amountIsXrp = typeof amount === "string";
+    const sendMaxIsXrpOrAbsent = tx.SendMax === undefined || typeof tx.SendMax === "string";
+    if (amountIsXrp && sendMaxIsXrpOrAbsent) {
+      warnings.push({
+        code: "MALFORMED_PARTIAL_XRP",
+        severity: "danger",
+        message:
+          "Malformed: a direct XRP-to-XRP payment cannot be partial. The ledger will reject this transaction (temBAD_SEND_XRP_PARTIAL) — but a hardware device will still sign it.",
+      });
+    }
   }
   if (destEntry?.requiresDestinationTag && tx.DestinationTag === undefined) {
     warnings.push({
