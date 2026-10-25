@@ -1,0 +1,19 @@
+{
+  "name": "xrpl-clear-signing-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "harness"
+  ],
+  "scripts": {
+    "test": "npm run test -w packages/core",
+    "demo": "npm run dev -w apps/demo",
+    "sign": "tsx harness/sign-hw-app.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0"
+  }
+}

@@ -1,0 +1,43 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  background: #0b0b14;
+  color: #ededf2;
+}
+main { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+header h1 { margin: 0 0 4px; font-size: 26px; }
+header p { color: #9a9ab0; margin: 0 0 20px; }
+.columns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 900px) { .columns { grid-template-columns: 1fr; } }
+.samples { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+button {
+  background: #22223a; color: #ededf2; border: 1px solid #3a3a5c;
+  border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 13px;
+}
+button:hover { background: #2d2d4d; }
+button:disabled { opacity: 0.5; cursor: default; }
+textarea, input {
+  width: 100%; background: #12121f; color: #d7d7e8; border: 1px solid #2c2c48;
+  border-radius: 10px; padding: 12px; font-family: ui-monospace, Menlo, monospace;
+  font-size: 12.5px; resize: vertical;
+}
+.simulate { display: flex; gap: 8px; margin-top: 10px; }
+.card {
+  background: #141425; border: 1px solid #2c2c48; border-radius: 12px;
+  padding: 16px; margin-bottom: 14px;
+}
+.card.nested { margin: 10px 0 0; background: #101020; }
+.card.error { border-color: #7f1d1d; color: #fca5a5; }
+.card h2 { margin: 0 0 6px; font-size: 18px; }
+.summary { color: #b9b9d0; margin: 0 0 10px; }
+.warnings { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 6px; }
+.warning { padding: 8px 10px; border-radius: 8px; font-size: 13px; }
+.warning.danger { background: #3b0d12; border: 1px solid #b91c1c; color: #fecaca; }
+.warning.warn { background: #392d0a; border: 1px solid #b45309; color: #fde68a; }
+.warning.info { background: #0c2740; border: 1px solid #1d4ed8; color: #bfdbfe; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+td { padding: 6px 8px; border-top: 1px solid #23233c; vertical-align: top; }
+td.label, .label { color: #8e8eac; white-space: nowrap; }
+tr.risk-danger td { color: #fda4af; }
+tr.risk-warn td { color: #fcd34d; }

@@ -1,0 +1,27 @@
+{
+  "network": "mainnet",
+  "accounts": {
+    "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De": {
+      "address": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+      "name": "Ripple (RLUSD)",
+      "verified": true,
+      "kind": "issuer",
+      "currencies": ["RLUSD"]
+    },
+    "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B": {
+      "address": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B",
+      "name": "Bitstamp",
+      "verified": true,
+      "kind": "exchange",
+      "currencies": ["USD", "BTC"],
+      "requiresDestinationTag": true
+    },
+    "rhub8VRN55s94qWKDv6jmDy1pUykJzF3wq": {
+      "address": "rhub8VRN55s94qWKDv6jmDy1pUykJzF3wq",
+      "name": "GateHub",
+      "verified": true,
+      "kind": "issuer",
+      "currencies": ["USD", "EUR"]
+    }
+  }
+}

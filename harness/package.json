@@ -1,0 +1,16 @@
+{
+  "name": "ledger-harness",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "dependencies": {
+    "@ledgerhq/hw-app-xrp": "^6.28.0",
+    "@ledgerhq/hw-transport-node-speculos-http": "^6.29.0",
+    "xrpl": "^4.0.0",
+    "xrpl-clear-signing": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.19.0"
+  }
+}
