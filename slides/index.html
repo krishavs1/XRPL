@@ -49,6 +49,8 @@
     .card { border: 1px solid var(--line); border-radius: 14px; padding: 0.7em 0.9em; background: #fff; font-size: 0.7em; }
     .card h3 { font-size: 1.1em; margin: 0 0 0.3em; }
     .card p { margin: 0; line-height: 1.4; }
+    .card ul, .card ol { margin: 0 0 0 1.1em; }
+    .card li { margin: 0.25em 0; line-height: 1.35; }
     .card.danger { border-color: #fecaca; background: var(--danger-soft); }
     .card.accent { border-color: #bfdbfe; background: #eff6ff; }
     .title-slide h1 { font-size: 2.8em; line-height: 1.05; margin: 0.2em 0; }
@@ -74,29 +76,57 @@
     .scam-flag { display: none; }
     .scam-flag.visible ~ .cols .raw.a { border-color: var(--danger); background: var(--danger-soft); transform: scale(1.03); }
 
-    /* Device screens (rendered from toDeviceScreens output) */
-    .device-row { display: flex; gap: 0.5em; flex-wrap: wrap; }
-    .screen { width: 8.6em; min-height: 4.6em; background: #111; color: #f8fafc; border-radius: 10px; padding: 0.55em 0.6em; font-size: 0.48em; line-height: 1.35; box-shadow: 0 0 0 4px #334155; }
-    .screen b { display: block; font-size: 0.75em; letter-spacing: 0.04em; margin-bottom: 0.3em; }
-    .screen.warn b { color: #f87171; }
-    .screen.final { box-shadow: 0 0 0 4px var(--danger); }
-    .present .device-row.visible .screen.final { animation: pulse 1.4s 0.4s ease-in-out 2; }
-    @keyframes pulse { 50% { box-shadow: 0 0 0 4px var(--danger), 0 0 0 14px rgba(220, 38, 38, 0.18); } }
+    /* One-line flow above the device mockups */
+    .reveal .flow { font-size: 0.5em; color: var(--muted); margin: 0 0 0.8em; }
+    .reveal .flow b { font-family: var(--r-code-font); color: var(--blue); }
+    .reveal .flow span { margin: 0 0.4em; }
 
-    /* Pipeline */
-    .pipe { display: flex; align-items: stretch; gap: 0.4em; font-size: 0.6em; }
-    .pipe .step { flex: 1; border: 1px solid var(--line); border-radius: 12px; padding: 0.7em; background: #fff; }
-    .pipe .step b { display: block; color: var(--blue); font-family: var(--r-code-font); font-size: 0.95em; margin-bottom: 0.3em; }
-    .pipe .arrow { align-self: center; color: var(--muted); font-size: 1.4em; }
-    .pipe.compact { font-size: 0.42em; }
+    /* Device mockups: four equal columns, labels on the first row */
+    .devices { display: grid; grid-template-columns: repeat(4, 1fr); column-gap: 0.7em; row-gap: 0.35em; }
+    .dev-label { font-size: 0.42em; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding-bottom: 0.3em; border-bottom: 2px solid var(--line); }
+    .dev-label.clear { grid-column: 2 / 5; color: var(--blue); border-color: var(--blue); }
+    .device { background: #1e293b; border-radius: 18px; padding: 8px; }
+    .device.final { box-shadow: 0 0 0 3px var(--danger); }
+    .scr { background: #fff; border-radius: 11px; height: 230px; padding: 0.8em 0.9em; font-size: 0.44em; display: flex; flex-direction: column; gap: 0.45em; color: var(--ink); line-height: 1.3; }
+    .scr .h { font-weight: 800; font-size: 1.15em; margin-bottom: 0.2em; }
+    .scr .kv span { display: block; font-size: 0.8em; color: var(--muted); }
+    .scr .bad { color: var(--danger); font-weight: 700; font-style: normal; }
+    .scr .warnicon { font-size: 2.2em; line-height: 1; color: var(--danger); }
+    .scr .btn { margin-top: auto; text-align: center; border-radius: 999px; padding: 0.45em; background: var(--ink); color: #fff; font-weight: 700; }
+    .scr .btn.reject { background: var(--danger); }
+    .scr .btn.ghost { margin-top: 0; background: transparent; color: var(--muted); border: 1px solid var(--line); font-weight: 600; }
+    .reveal .caption { font-size: 0.46em; line-height: 1.35; margin: 0.5em 0 0; }
+    .present .visible .device.final { animation: pulse 1.4s 0.4s ease-in-out 2; }
+    @keyframes pulse { 50% { box-shadow: 0 0 0 3px var(--danger), 0 0 0 12px rgba(220, 38, 38, 0.18); } }
 
+    /* Wallet-to-device sequence diagram */
+    .seq { display: grid; grid-template-columns: 1fr 1.15fr 1fr; column-gap: 0.6em; row-gap: 0.5em; font-size: 0.5em; align-items: center; }
+    .seq .lane { font-weight: 800; padding-bottom: 0.35em; border-bottom: 2px solid var(--ink); }
+    .seq .lane.mid { text-align: center; border-color: var(--line); color: var(--muted); }
+    .seq .lane span { display: block; font-weight: 500; color: var(--muted); font-size: 0.85em; }
+    .seq .cell { border: 1px solid var(--line); border-radius: 10px; padding: 0.55em 0.7em; line-height: 1.35; background: #fff; }
+    .seq .cell code { font-size: 0.95em; background: none; padding: 0; color: var(--blue); }
+    .seq .wire { display: flex; flex-direction: column; gap: 0.5em; color: var(--muted); font-size: 0.85em; text-align: center; }
+    .seq .wire > div { position: relative; padding-bottom: 0.2em; border-bottom: 2px solid var(--muted); }
+    .seq .wire .out::after, .seq .wire .back::after { content: ""; position: absolute; bottom: -6px; border: 5px solid transparent; }
+    .seq .wire .out::after { right: -2px; border-left: 8px solid var(--muted); border-right: 0; }
+    .seq .wire .back::after { left: -2px; border-right: 8px solid var(--muted); border-left: 0; }
+    .seq .proposed.cell { border: 2px dashed var(--blue); background: #eff6ff; }
+    .seq .proposed.wire { color: var(--blue); }
+    .seq .proposed.wire > div { border-bottom: 2px dashed var(--blue); }
+    .seq .proposed.wire .out::after { border-left-color: var(--blue); }
+    .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6em; margin-top: 0.9em; font-size: 0.46em; }
+    .reveal .facts p { margin: 0; line-height: 1.4; color: var(--muted); }
+
+    .net { display: flex; gap: 1em; align-items: baseline; margin-top: 0.8em; padding: 0.6em 0.9em; border: 1px solid #bfdbfe; background: #eff6ff; border-radius: 10px; font-size: 0.46em; line-height: 1.4; }
+    .net b { white-space: nowrap; color: var(--blue); }
 
     .reveal .progress { color: var(--blue); }
     .reveal .controls { color: var(--blue); }
 
     @media (prefers-reduced-motion: reduce) {
       .rise { opacity: 1; transform: none; }
-      .present .rise, .present .blue-underline, .present .device-row.visible .screen.final { animation: none; }
+      .present .rise, .present .blue-underline, .present .visible .device.final { animation: none; }
       .blue-underline { background-size: 100% 0.08em; }
     }
   </style>
@@ -212,69 +242,114 @@
   <!-- 6. How it works -->
   <section>
     <div class="kicker">How it works</div>
-    <h2 style="font-size:1.4em">Trustline A, start to finish</h2>
-    <div class="pipe compact">
-      <div class="step"><b>input</b>Hex or JSON</div><div class="arrow">→</div>
-      <div class="step"><b>explain()</b>Sentence + risks</div><div class="arrow">→</div>
-      <div class="step"><b>simulateTx()</b>Optional dry run</div><div class="arrow">→</div>
-      <div class="step"><b>toDeviceScreens()</b>Device screens</div>
-    </div>
-    <div class="device-row fragment fade-up" style="margin-top:0.9em">
-      <div class="screen warn"><b>⚠ UNVERIFIED_<wbr>ISSUER</b>Issuer rapcCiz…VUuKn is not in the verified registry.</div>
-      <div class="screen warn"><b>⚠ CURRENCY_<wbr>IMPERSONATION</b>"RLUSD" is canonically issued by Ripple (RLUSD)…</div>
-      <div class="screen warn"><b>⚠ UNLIMITED_<wbr>TRUSTLINE</b>Limit is effectively unlimited.</div>
-      <div class="screen"><b>Review</b>Set trustline</div>
-      <div class="screen"><b>Issuer</b>rapcCiz…VUuKn · unverified</div>
-      <div class="screen final warn"><b>Reject recommended</b>3 danger warnings. Hold to sign anyway.</div>
-    </div>
-    <p class="small muted" style="margin-top:0.9em">Also running inside a forked Ledger XRP app on Speculos. The stock app still shows raw fields.</p>
-    <aside class="notes">
-      Real toDeviceScreens() output for the scam fixture, not a mockup. Danger first, unverified names never shown, last screen changes. The firmware fork is emulator-only: physical devices need Ledger-signed firmware, which is why this is a standard, not a fork.
-    </aside>
-  </section>
+    <h2 style="font-size:1.4em; margin-bottom:0.3em">What you see on the device</h2>
+    <p class="flow">Trustline A <span>→</span> <b>explain()</b> finds 3 dangers <span>→</span> <b>toDeviceScreens()</b> puts them on the device</p>
+    <div class="devices">
+      <div class="dev-label">Today</div>
+      <div class="dev-label clear">With Clear</div>
 
-  <!-- 7. How to use it -->
-  <section>
-    <div class="kicker">How to use it</div>
-    <h2>Three calls for any wallet</h2>
-    <div class="cols" style="grid-template-columns: 1.3fr 1fr;">
-      <pre><code class="language-ts" data-trim>
-import { explain, toDeviceScreens, simulateTx,
-         defaultRegistry } from "xrpl-clear";
+      <div>
+        <div class="device"><div class="scr">
+          <div class="h">Review transaction</div>
+          <div class="kv"><span>Type</span>TrustSet</div>
+          <div class="kv"><span>Currency</span>RLUSD</div>
+          <div class="kv"><span>Issuer</span>rapcCizU9u5E…VUuKn</div>
+          <div class="kv"><span>Limit</span>1000000000</div>
+          <div class="btn">Sign</div>
+        </div></div>
+        <p class="caption"><b>Raw fields.</b> The real RLUSD looks the same.</p>
+      </div>
 
-const intent = explain(txBlobOrJson);
-intent.warnings; // UNVERIFIED_ISSUER, …
+      <div class="fragment fade-up" data-fragment-index="1">
+        <div class="device"><div class="scr">
+          <div class="warnicon">⚠</div>
+          <div class="h bad">3 danger warnings</div>
+          <div class="kv">Unverified issuer</div>
+          <div class="kv">Fake RLUSD issuer</div>
+          <div class="kv">Unlimited limit</div>
+        </div></div>
+        <p class="caption"><b>1. Warnings first,</b> before any details.</p>
+      </div>
 
-const screens = toDeviceScreens(intent, defaultRegistry);
-const sim = await simulateTx(intent.raw); // optional
-      </code></pre>
-      <div class="small">
-        <p><strong>Live demo</strong></p>
-        <ol>
-          <li>Choose</li>
-          <li>Review</li>
-          <li>Simulate</li>
-          <li>Sign on Ledger</li>
-        </ol>
+      <div class="fragment fade-up" data-fragment-index="1">
+        <div class="device"><div class="scr">
+          <div class="h">Set trustline</div>
+          <div class="kv"><span>Currency</span>RLUSD</div>
+          <div class="kv"><span>Issuer</span>rapcCiz…VUuKn <em class="bad">unverified</em></div>
+          <div class="kv"><span>Limit</span>1000000000 <em class="bad">unlimited</em></div>
+        </div></div>
+        <p class="caption"><b>2. Risky details marked.</b> Unverified names are never shown.</p>
+      </div>
+
+      <div class="fragment fade-up" data-fragment-index="1">
+        <div class="device final"><div class="scr">
+          <div class="h bad">Reject recommended</div>
+          <div class="kv">3 danger warnings</div>
+          <div class="btn reject">Reject</div>
+          <div class="btn ghost">Hold to sign anyway</div>
+        </div></div>
+        <p class="caption"><b>3. A different last screen</b> when something is dangerous.</p>
       </div>
     </div>
     <aside class="notes">
-      The library lives in packages/core; it is not on npm yet. Switch to the live demo here. Sign runs on Speculos with Ledger's pre-release XRP signer kit, settled on testnet.
+      The left screen is an illustration of raw-field review, not a capture of the stock app. The three Clear screens summarise the real toDeviceScreens() output for the scam fixture: three warning screens, then the fields, then "Reject recommended". The same warning class also runs inside our forked Ledger XRP app on the Speculos emulator. simulateTx() is optional and isn't part of this path: the scam simulates as tesSUCCESS anyway. Switch to the live demo here: Choose, Review, Simulate, Sign on Ledger.
     </aside>
   </section>
 
-  <!-- 8. Next steps -->
+  <!-- 7. Next steps -->
   <section>
     <div class="kicker">Next steps</div>
-    <h2>From draft to standard</h2>
-    <div class="cols" style="gap:0.8em">
-      <div class="card"><h3>Standard</h3><p>Post to XRPL-Standards. Signed per-network registries.</p></div>
-      <div class="card"><h3>Risk checks</h3><p>Payment destinations, Batch signers, simulate results.</p></div>
-      <div class="card"><h3>Devices</h3><p>Propose the device profile to Ledger. Test on hardware.</p></div>
-      <div class="card"><h3>Ecosystem</h3><p>File our signer-kit feedback. Wallet integrations.</p></div>
+    <h2>Put the warnings on the Ledger itself</h2>
+    <div class="cols" style="gap:0.8em; align-items:stretch">
+      <div class="card danger"><h3>Why the XRP app can't do it yet</h3><ul>
+        <li>It can only <strong>list fields one by one</strong>. It has no way to show a plain-English summary or a warning screen.</li>
+        <li>It has <strong>no way to receive</strong> our metadata or issuer info, so it can't tell a real RLUSD from a fake.</li>
+        <li>A Ledger is small: it <strong>can't store</strong> a list of every token issuer.</li>
+      </ul></div>
+      <div class="card accent"><h3>How to fix it</h3><ol>
+        <li>Teach Ledger's XRP app to show <strong>summaries and warnings</strong>. Its code is open source, and our fork is the starting point.</li>
+        <li>Ledger approves it and ships it as a <strong>normal app update</strong>.</li>
+        <li>Wallets send the Ledger a <strong>signed note</strong> saying who really issues each token, and the device checks it. Ethereum Ledgers already work this way.</li>
+      </ol></div>
+    </div>
+    <p class="big" style="margin-top:0.8em; font-size:1em">Result: <span class="blue">every wallet that uses a Ledger shows the warning, with no extra app.</span></p>
+    <aside class="notes">
+      The change goes into the XRP app that runs on the Ledger (LedgerHQ/app-xrp), not the device's operating system, so users just update the app. Today the app parses the transaction and shows each field as a raw label/value pair; its signing command takes only the transaction, so there's nowhere to pass metadata or registry entries. Only Ledger can ship the change, because devices only run Ledger-signed apps; our fork proves the warning works, on the emulator. Our patch targets app-xrp v2.8.1 on Stax and runs on Speculos, Ledger's emulator. Physical devices only accept apps Ledger has signed. The fork's verified-issuer list is hard-coded, which doesn't scale: hence the signed note. The note has to be signed because the device can't trust the computer it's plugged into. Our first version crashed doing heavy address encoding during review, which shows how tight device resources are.
+    </aside>
+  </section>
+
+  <!-- 8. Under the hood -->
+  <section>
+    <div class="kicker">Under the hood</div>
+    <h2 style="font-size:1.4em; margin-bottom:0.4em">How the wallet talks to the Ledger</h2>
+    <div class="seq">
+      <div class="lane">Wallet <span>browser or Node</span></div>
+      <div class="lane mid">USB (WebHID) <span>or Speculos over HTTP</span></div>
+      <div class="lane">Ledger <span>XRP app</span></div>
+
+      <div class="cell"><code>getAddress(44'/144'/0'/0/0)</code></div>
+      <div class="wire"><div class="out">request</div><div class="back">address + public key</div></div>
+      <div class="cell">Derives the account key</div>
+
+      <div class="cell proposed fragment fade-up" data-fragment-index="1"><strong>New:</strong> Ledger-signed issuer info</div>
+      <div class="wire proposed fragment fade-up" data-fragment-index="1"><div class="out">sent before signing</div></div>
+      <div class="cell proposed fragment fade-up" data-fragment-index="1">Checks Ledger's signature, adds warnings to the review</div>
+
+      <div class="cell"><code>signTransaction(tx bytes)</code></div>
+      <div class="wire"><div class="out">sent in chunks</div><div class="back">signature (DER)</div></div>
+      <div class="cell">Parses the bytes, shows the review, waits for the user to approve</div>
+    </div>
+    <div class="facts">
+      <p><strong>APDUs:</strong> every message is a small binary command and reply.</p>
+      <p><strong>Key stays put:</strong> only the signature leaves the device.</p>
+      <p><strong>Screen can't be faked:</strong> it shows the device's own reading of the bytes.</p>
+    </div>
+    <div class="net">
+      <b>Wallet ⇄ XRP Ledger, via QuickNode</b>
+      <span>All live data runs through one <strong>QuickNode</strong> WebSocket endpoint: simulate, the live transaction feed, account history and submitting the signed transaction.</span>
     </div>
     <aside class="notes">
-      Be explicit: the spec isn't posted yet and the feedback isn't filed yet. More types next: MPT, Credentials, Vaults (XLS-65), Lending (XLS-66).
+      The wallet uses Ledger's Device Management Kit with the pre-release XRP signer kit (apps/demo/src/ledger.ts). Transport is WebHID for a real device over USB, or HTTP to Speculos for the emulator. The wallet serialises with xrpl's encode(), not encodeForSigning(): the XRP app adds the signing prefix itself. SigningPubKey is set to the device's public key before encoding. The DER signature goes into TxnSignature and the wallet submits to the XRP Ledger. The demo mirrors the emulator screen through Speculos's /screenshot and /events endpoints and forwards clicks to /finger. Speculos serves one client at a time. The third row is the proposal from the previous slide: it doesn't exist in the XRP app today. Network: every live call in the demo (simulate, the subscribe feed, balances, account_tx history, autofill, submit) goes through a single QuickNode WebSocket endpoint on XRPL testnet, set with VITE_XRPL_WSS in apps/demo/.env.local or the network button in the header (which shows the QuickNode host). WebSocket also avoids the public testnet JSON-RPC server's missing CORS headers. Static rendering with explain() needs no network at all.
     </aside>
   </section>
 
