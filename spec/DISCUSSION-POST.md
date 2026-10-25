@@ -1,90 +1,108 @@
 # Post this to github.com/XRPLF/XRPL-Standards → Discussions → New discussion (category: Standards / Pre-proposal)
 
-Suggested title: **Pre-proposal: Transaction Display Metadata (clear signing for XRPL)**
+Suggested title: **Pre-proposal: a display-metadata standard for clear signing on XRPL**
 
 ---
 
-## Abstract
+## The gap
 
-A JSON metadata format that lets any XRPL wallet - software or hardware -
-render a transaction as human-readable intent with standardized risk
-annotations, instead of raw fields or a signing blob. Comparable in role to
-ERC-7730 on EVM, adapted to XRPL's fixed transaction schema.
+Every XRPL wallet renders transactions its own way, and when you get down to a
+hardware device, most of that rendering falls apart. The device shows raw
+fields at best, and for newer transaction types it asks you to turn on blind
+signing and approve bytes you can't read. There's no shared, auditable way to
+say "this is what this transaction does, and here's why it might be dangerous."
 
-## Motivation
+A few concrete things that no signing UI I've seen will warn you about today:
 
-Every XRPL wallet implements its own transaction rendering. The results are
-inconsistent, unaudited, and software-only: no XRPL transaction type renders
-as intent on a hardware device's secure screen, and newer transaction types
-fall back to blind signing. Concretely, today a user cannot tell from any
-signing UI that:
+- a TrustSet to a token named "RLUSD" whose issuer isn't the real RLUSD issuer
+  (a scam token impersonating a real one), with an effectively unlimited limit;
+- a Payment with `tfPartialPayment` set, where the Amount you see is not what
+  actually arrives;
+- a Batch (XLS-56) that runs up to 8 inner transactions behind a single
+  approval;
+- a SetRegularKey that quietly hands signing control of your account to another
+  key.
 
-- a TrustSet named "RLUSD" points at a non-canonical issuer with an
-  effectively unlimited limit;
-- a Payment carries `tfPartialPayment`, so the stated Amount is not what will
-  arrive;
-- a Batch (XLS-56) executes up to 8 inner transactions behind one approval;
-- an AMMDeposit is single-sided with no `LPTokenOut`/`EPrice` bound.
+Ethereum ran into this and ended up with ERC-7730: display metadata, reviewed
+into a registry, consumed by wallets and by Ledger devices so the secure screen
+can show human-readable intent. XRPL has nothing equivalent, even though our
+problem is actually easier — we have a fixed, known set of transaction types
+instead of arbitrary contract calldata.
 
-EVM addressed the equivalent problem with ERC-7730: reviewed display metadata
-consumed by wallets and devices. XRPL's case is simpler - a closed set of
-transaction types with known schemas rather than arbitrary calldata - and has
-no equivalent standard.
+So we took a run at it over the weekend and want to float the design here before
+it hardens into anything.
 
-## Specification (summary - full draft linked below)
+## What we're proposing
 
-1. **Display metadata document, one per transaction type**: a title, an
-   intent template, an ordered field list (`path`, `label`, `format`), and
-   declarative risk rules. Formats: `currency` (160-bit code decoding, AMM-LP
-   detection), `account`, `amount`, `rippleTime`, `decimal`, `flags`.
-2. **Account registry**: per-network signed JSON mapping addresses to
-   `{name, verified, kind, currencies, requiresDestinationTag}`. The
-   `currencies` field enables impersonation detection: a currency name whose
-   canonical verified issuer(s) do not include the transaction's issuer is
-   flagged.
-3. **Standardized risk codes** with severities (`info|warn|danger`), so every
-   conforming wallet warns on the same facts: `UNLIMITED_TRUSTLINE`,
-   `UNVERIFIED_ISSUER`, `CURRENCY_IMPERSONATION`, `PARTIAL_PAYMENT`,
-   `MALFORMED_PARTIAL_XRP`, `MISSING_DESTINATION_TAG`,
-   `BATCH_MULTI_EXECUTION`, `SINGLE_SIDED_DEPOSIT`, `POOL_SEEDING`,
-   `NO_DISPLAY_METADATA`, among others.
-4. **Composition rule**: a Batch's `RawTransactions` MUST be rendered
-   recursively through the same pipeline, inner warnings surfaced at the top
-   level; a conforming signer MUST NOT render a Batch as one opaque item.
-5. **Enrichment rule**: where connectivity exists, renderers SHOULD enrich
-   static intent with a `simulate` (XLS-69) dry run; static rendering MUST
-   remain fully functional offline, since hardware devices sign offline.
-6. **Fallback rule**: unknown types/fields render raw with
-   `NO_DISPLAY_METADATA`; nothing is hidden.
-7. **Device profile**: ordering, truncation, and warning-precedence rules for
-   secure-screen rendering.
+A JSON display-metadata format, one document per transaction type, plus a small
+registry of known accounts. A wallet that adopts it writes JSON, not code.
 
-## Rationale
+Each **metadata document** carries a title, an intent template, an ordered list
+of fields to show (with a `format` each — `amount`, `account`, `currency`,
+`rippleTime`, `flags`, and so on), and a set of **risk rules**. A risk rule is
+a declarative condition plus a message; the ones whose conditions hold become
+warnings. The conditions are deliberately boring — `gte`, `flag`, `missing`,
+`verified`, `impersonates`, combined with `and`/`or`/`not` — so the rules stay
+auditable and portable rather than turning into per-wallet code.
 
-- Metadata, not code: wallets differ in stack; a declarative format is
-  reviewable and portable, following the ERC-7730 precedent.
-- Risk codes in the standard, not the wallet: warning semantics should not be
-  a wallet differentiator; they should be audited once.
-- Per-type documents: XRPL's amendment process adds transaction types at a
-  known cadence; new types (MPT, Credentials, XLS-65 Vaults, XLS-66 Lending)
-  are one metadata file each, with no wallet code changes.
+The **account registry** is a per-network JSON file mapping addresses to
+`{ name, verified, currencies, ... }`. It's what makes impersonation detection
+possible: decode a transaction's currency to a name, ask the registry who the
+verified issuer(s) of that name are, and if the transaction's issuer isn't one
+of them, flag it.
 
-## Security considerations
+A few rules we think belong in the standard, not left to each wallet:
 
-Registry governance is the main trust surface (same as ERC-7730): entries are
-reviewed via PR in a public repository, and wallets pin a registry hash. The
-renderer must be deterministic from (bytes, metadata, registry) so two wallets
-cannot disagree about displayed intent. Simulation output is advisory
-enrichment and must never substitute for static rendering.
+- **Standardized risk codes.** Warning semantics shouldn't be a wallet
+  differentiator. `CURRENCY_IMPERSONATION`, `UNLIMITED_TRUSTLINE`,
+  `PARTIAL_PAYMENT`, `BATCH_MULTI_EXECUTION`, `SINGLE_SIDED_DEPOSIT`, etc., each
+  with a severity (`info`/`warn`/`danger`), so every conforming wallet warns on
+  the same facts.
+- **Batch is composition, not a type.** A Batch's inner transactions MUST be
+  rendered recursively through the same pipeline, with their warnings surfaced
+  at the top level. A signer MUST NOT show a Batch as one opaque item.
+- **Simulation is enrichment, never the floor.** Where there's a connection, a
+  renderer SHOULD enrich the static preview with a `simulate` (XLS-69) dry run.
+  But static rendering MUST work fully offline, because devices sign offline.
+- **Nothing hides.** Unknown types or fields render raw with a
+  `NO_DISPLAY_METADATA` warning rather than silently disappearing.
+- **A device profile** for ordering, truncation, and warning precedence on a
+  secure screen (dangers before fields, middle-truncated addresses, verified
+  names only when the registry says so).
 
-## Reference implementation
+## What we actually built
 
-Draft spec, a TypeScript reference parser covering six transaction types
-(TrustSet, Payment, OfferCreate, EscrowCreate, AMMDeposit, Batch) with the
-fallback renderer, a demo rendering previews beside a Ledger device via the
-pre-release `device-signer-kit-xrp`, and fixture tests:
-**[LINK TO YOUR GITHUB REPO]**
+Not just a doc — we wanted to know the format could carry real logic:
 
-Built at the AI & Fintech XRPL Hackathon (NYC, Oct 24–25, 2026). Feedback
-wanted on: the field-path expression subset, registry governance, and whether
-risk codes belong in this standard or a companion document.
+- A reference parser in TypeScript. **Nine transaction types render entirely
+  from metadata documents** (TrustSet, Payment, OfferCreate, EscrowCreate,
+  AMMDeposit, SetRegularKey, SignerListSet, AccountSet, AccountDelete); Batch is
+  the one hand-written renderer, because it's the composition rule above rather
+  than a per-type document. No rendering code per type — the parser is an
+  interpreter for the format.
+- A demo that previews any transaction (JSON or a raw signing blob), enriches it
+  with `simulate`, and signs on a Ledger via the pre-release
+  `device-signer-kit-xrp`, with the device's screen shown beside the preview.
+- A proof that this belongs on the device: we forked the XRP app firmware
+  (LedgerHQ/app-xrp) so the unverified-issuer / impersonation warning renders on
+  the device's own review screen. It runs on Speculos; shipping to real devices
+  is Ledger's to do, which is exactly the point of proposing a standard rather
+  than a fork.
+
+Repo (spec, parser, tests, demo, firmware patch):
+**https://github.com/krishavs1/XRPL**
+
+## Open questions we'd genuinely like input on
+
+- **Registry governance.** We've assumed the ERC-7730 model — entries reviewed
+  by PR in a public repo, wallets pin a hash. Is that the right home for XRPL,
+  or should issuer verification hang off something more native?
+- **How far the condition language should go.** We kept it to simple predicates
+  on purpose. Computed values (an OfferCreate's effective price, say) and
+  conditions over arrays don't fit yet. Grow the DSL, or keep an escape hatch
+  for the hard cases?
+- **Where risk codes live** — in this standard, or a companion document that can
+  version independently of the display format?
+
+Built at the AI & Fintech XRP Ledger Hackathon (NYC, Oct 24-25, 2026). Happy to
+turn this into a proper XLS draft if there's appetite for it.

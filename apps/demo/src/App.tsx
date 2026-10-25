@@ -72,6 +72,10 @@ export function App() {
   });
   const [endpoint, setEndpoint] = useState(DEFAULT_WSS);
   const [sim, setSim] = useState<SimulationResult | null>(null);
+  // Don't surface the review's danger/warning count until the user has actually
+  // opened Review — otherwise the pre-selected scenario makes the nav look like
+  // it pre-judged before you did anything.
+  const [reviewed, setReviewed] = useState(false);
   const [deviceAccount, setDeviceAccount] = useState("");
   const [signStatus, setSignStatus] = useState("not connected");
   const [activity, setActivity] = useState<ActivityEntry[]>(loadActivity);
@@ -87,6 +91,9 @@ export function App() {
   const [syncReady, setSyncReady] = useState(false);
   const prevUser = useRef<string | null>(null);
 
+  useEffect(() => {
+    if (route === "review" || route === "simulate" || route === "sign") setReviewed(true);
+  }, [route]);
   useEffect(() => save("cs.input", input), [input]);
   useEffect(() => save("cs.source", JSON.stringify(source)), [source]);
   useEffect(() => saveActivity(activity), [activity]);
@@ -162,11 +169,13 @@ export function App() {
     choose: { status: source.label },
     review: !intent
       ? { status: "nothing to review" }
-      : dangers
-        ? { status: `${dangers} danger${warns ? ` · ${warns} warning${warns > 1 ? "s" : ""}` : ""}`, tone: "danger" }
-        : warns
-          ? { status: `${warns} warning${warns > 1 ? "s" : ""}`, tone: "warn" }
-          : { status: "no warnings", tone: "ok" },
+      : !reviewed
+        ? { status: "ready" }
+        : dangers
+          ? { status: `${dangers} danger${warns ? ` · ${warns} warning${warns > 1 ? "s" : ""}` : ""}`, tone: "danger" }
+          : warns
+            ? { status: `${warns} warning${warns > 1 ? "s" : ""}`, tone: "warn" }
+            : { status: "no warnings", tone: "ok" },
     simulate: sim ? { status: sim.engineResult, tone: sim.engineResult === "tesSUCCESS" ? "ok" : "danger" } : { status: "not run" },
     sign: { status: signStatus },
   };

@@ -62,10 +62,16 @@ export function SignScreen({ intent, endpoint, onPrepared, onAddress, onStatus, 
   async function connect() {
     setBusy(true);
     setError("");
+    // Clear any stale identity first, so a failed connect never leaves a
+    // "connected but no address" state that then signs with an empty Account.
+    setSigner(null);
+    setAddress("");
+    setBalance(null);
     try {
       const s = await connectDevice(transport);
-      setSigner(s);
       const addr = await getDeviceAddress(s);
+      if (!addr?.address) throw new Error("Device returned no address - reconnect (restart Speculos if it persists).");
+      setSigner(s);
       setAddress(addr.address);
       setPublicKey(addr.publicKey);
       onAddress?.(addr.address);
@@ -178,7 +184,7 @@ export function SignScreen({ intent, endpoint, onPrepared, onAddress, onStatus, 
           <button
             className={dangers ? "danger" : "accent"}
             onClick={sign}
-            disabled={busy || !signer || !tx || blocked || foreignBatch}
+            disabled={busy || !signer || !address || !tx || blocked || foreignBatch}
             title={foreignBatch ? "This Batch contains other accounts' inner transactions; signing it requires their BatchSigners. Load the Batch fixture to sign one of your own." : undefined}
           >
             {dangers ? "Sign anyway" : "Sign on device"}
