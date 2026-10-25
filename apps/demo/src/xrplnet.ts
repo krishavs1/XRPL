@@ -85,12 +85,19 @@ export async function simulateViaWs(
 
 export async function getBalanceOrNull(url: string, address: string): Promise<number | null> {
   const c = await connected(url);
-  try {
-    return await c.getXrpBalance(address);
-  } catch (e: any) {
-    if (e?.data?.error === "actNotFound") return null;
-    throw e;
+  let lastErr: any;
+  // Retry transient read failures (cold WSS handshake, brief node hiccup).
+  // Only a definitive actNotFound means the account really doesn't exist.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      return Number(await c.getXrpBalance(address));
+    } catch (e: any) {
+      if (e?.data?.error === "actNotFound") return null;
+      lastErr = e;
+      await new Promise((r) => setTimeout(r, 400));
+    }
   }
+  throw lastErr;
 }
 
 export async function fundFromFaucet(url: string, address: string): Promise<number> {

@@ -178,7 +178,7 @@ export function SignScreen({ intent, endpoint, onPrepared, onAddress, onStatus, 
           <button
             className={dangers ? "danger" : "accent"}
             onClick={sign}
-            disabled={busy || !signer || !tx || balance === null || blocked || foreignBatch}
+            disabled={busy || !signer || !tx || blocked || foreignBatch}
             title={foreignBatch ? "This Batch contains other accounts' inner transactions; signing it requires their BatchSigners. Load the Batch fixture to sign one of your own." : undefined}
           >
             {dangers ? "Sign anyway" : "Sign on device"}
