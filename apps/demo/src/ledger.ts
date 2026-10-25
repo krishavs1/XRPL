@@ -21,26 +21,33 @@ export const SPECULOS_URL = "http://127.0.0.1:5000";
 export const DERIVATION_PATH = "44'/144'/0'/0/0";
 export type TransportChoice = "speculos" | "usb";
 
-let dmk: DeviceManagementKit | undefined;
+let activeKit: DeviceManagementKit | undefined;
 
-function getDmk(): DeviceManagementKit {
-  if (!dmk) {
-    dmk = new DeviceManagementKitBuilder()
-      .addTransport(webHidTransportFactory) // real device over USB (Chrome/Edge/Brave)
-      .addTransport(speculosTransportFactory(SPECULOS_URL, false, DeviceModelId.STAX))
-      .build();
-  }
-  return dmk;
-}
-
+/**
+ * Build a FRESH kit on every connect. A cached kit keeps a session bound to a
+ * dead emulator instance after a Speculos restart, and sign requests sent into
+ * that stale session never reach the device.
+ */
 export async function connectDevice(transport: TransportChoice): Promise<SignerXrp> {
-  const kit = getDmk();
+  if (activeKit) {
+    try {
+      activeKit.close();
+    } catch {
+      // previous kit may already be dead; nothing to clean up
+    }
+    activeKit = undefined;
+  }
+  const kit = new DeviceManagementKitBuilder()
+    .addTransport(webHidTransportFactory) // real device over USB (Chrome/Edge/Brave)
+    .addTransport(speculosTransportFactory(SPECULOS_URL, false, DeviceModelId.STAX))
+    .build();
   const device = await firstValueFrom(
     kit.startDiscovering({
       transport: transport === "usb" ? webHidIdentifier : speculosIdentifier,
     })
   );
   const sessionId = await kit.connect({ device });
+  activeKit = kit;
   return new SignerXrpBuilder({ dmk: kit, sessionId }).build();
 }
 
