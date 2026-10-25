@@ -90,8 +90,17 @@ export function App() {
   return (
     <>
       <header>
-        <h1>xrpl-clear-signing</h1>
-        <span className="meta">transaction display metadata for XRPL · draft spec + reference parser · testnet</span>
+        <div className="brand">
+          <svg width="26" height="26" viewBox="0 0 48 48" aria-hidden="true">
+            <g fill="#006aff">
+              <circle cx="24" cy="13" r="6.5" />
+              <circle cx="14" cy="31" r="6.5" />
+              <circle cx="34" cy="31" r="6.5" />
+            </g>
+          </svg>
+          <h1>XRPL Clear Signing</h1>
+        </div>
+        <span className="meta">Transaction display metadata for XRPL · draft spec + reference parser · testnet</span>
       </header>
       <main>
         <section className="pane left">
