@@ -1,0 +1,71 @@
+{
+  "version": "0.1",
+  "txType": "AccountSet",
+  "title": "Change account settings",
+  "intent": [
+    { "when": { "eq": ["SetFlag", 4] }, "text": "Disable the master key of {Account|address}. Only its regular key or signer list will be able to sign." },
+    { "when": { "and": [{ "not": { "missing": "SetFlag" } }, { "not": { "missing": "ClearFlag" } }] }, "text": "Turn on \"{SetFlag|enum:asf}\" and turn off \"{ClearFlag|enum:asf}\" for {Account|address}." },
+    { "when": { "not": { "missing": "SetFlag" } }, "text": "Turn on \"{SetFlag|enum:asf}\" for {Account|address}." },
+    { "when": { "not": { "missing": "ClearFlag" } }, "text": "Turn off \"{ClearFlag|enum:asf}\" for {Account|address}." },
+    { "text": "Change the settings of {Account|address}." }
+  ],
+  "flags": {
+    "tfRequireDestTag": 65536,
+    "tfOptionalDestTag": 131072,
+    "tfRequireAuth": 262144,
+    "tfOptionalAuth": 524288,
+    "tfDisallowXRP": 1048576,
+    "tfAllowXRP": 2097152
+  },
+  "enums": {
+    "asf": {
+      "1": "Require destination tag",
+      "2": "Require trustline authorization",
+      "3": "Disallow XRP",
+      "4": "Disable master key",
+      "5": "Track account transaction ID",
+      "6": "No freeze (permanent)",
+      "7": "Global freeze",
+      "8": "Default rippling",
+      "9": "Deposit authorization",
+      "10": "Authorized NFT minter",
+      "12": "Block incoming NFT offers",
+      "13": "Block incoming checks",
+      "14": "Block incoming payment channels",
+      "15": "Block incoming trustlines",
+      "16": "Allow trustline clawback (permanent)"
+    }
+  },
+  "fields": [
+    { "path": "SetFlag", "label": "Turn on", "format": "enum:asf", "risks": ["MASTER_KEY_DISABLED", "NFTOKEN_MINTER_SET", "CLAWBACK_ENABLED"], "hideIfEmpty": true },
+    { "path": "ClearFlag", "label": "Turn off", "format": "enum:asf", "hideIfEmpty": true },
+    { "path": "NFTokenMinter", "label": "NFT minter", "format": "account", "risks": ["NFTOKEN_MINTER_SET"], "hideIfEmpty": true },
+    { "path": "Domain", "label": "Domain", "format": "hexText", "hideIfEmpty": true },
+    { "path": "TransferRate", "label": "Transfer rate", "format": "decimal", "hideIfEmpty": true },
+    { "path": "TickSize", "label": "Tick size", "format": "decimal", "hideIfEmpty": true },
+    { "path": "EmailHash", "label": "Email hash", "format": "raw", "hideIfEmpty": true },
+    { "path": "Flags", "label": "Flags", "format": "flags", "hideIfEmpty": true }
+  ],
+  "risks": [
+    {
+      "code": "MASTER_KEY_DISABLED",
+      "severity": "danger",
+      "when": { "eq": ["SetFlag", 4] },
+      "short": "you may lose access",
+      "message": "Disables the master key. From now on only the regular key or signer list can sign for this account. If someone else set those, they control the account."
+    },
+    {
+      "code": "NFTOKEN_MINTER_SET",
+      "severity": "warn",
+      "when": { "eq": ["SetFlag", 10] },
+      "message": "{NFTokenMinter|address} will be able to mint NFTs on behalf of this account."
+    },
+    {
+      "code": "CLAWBACK_ENABLED",
+      "severity": "warn",
+      "when": { "eq": ["SetFlag", 16] },
+      "short": "permanent",
+      "message": "Lets this account claw back tokens it has issued. This cannot be turned off later."
+    }
+  ]
+}

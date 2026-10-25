@@ -60,13 +60,24 @@ One JSON document per transaction type:
 
 The complete document is `packages/core/metadata/TrustSet.json` in the
 reference implementation, which renders TrustSet from it with no
-type-specific code.
+type-specific code. The same directory holds documents for `SetRegularKey`,
+`SignerListSet`, `AccountSet` and `AccountDelete`.
 
 - **Paths** are dotted field paths into the transaction JSON
-  (`LimitAmount.issuer`).
+  (`LimitAmount.issuer`). A `*` segment maps over an array
+  (`SignerEntries.*.SignerEntry.Account`); in a template or a non-account
+  field the values are joined with ", ", and an `account` field renders one
+  field per entry ("Signer 1", "Signer 2", …) so the device profile's
+  verified-name rule applies to each account.
 - **Templates** (`intent`, `message`) substitute `{path}` or `{path|format}`.
+- **`intent`** is a template, or a list of variants
+  `[{ "when": C, "text": "…" }, …, { "text": "…" }]`: the first variant whose
+  condition holds is used, and the last one MUST have no `when`.
 - **`flags`** maps flag names to bits for the `flags` format and the `flag`
   condition.
+- **`enums`** maps named value tables (`{ "asf": { "4": "Disable master key" } }`)
+  for the `enum:<name>` format, for fields holding a number rather than bits
+  (AccountSet `SetFlag` / `ClearFlag`).
 - **Field `risks`** link a field to risk codes: when one fires, the field is
   marked with its severity and the risk's `short` note is appended to the value.
 - **`hideIfEmpty`** omits a field whose formatted value is empty.
@@ -81,6 +92,7 @@ dozen lines. Each condition object has exactly one operator key:
 |---|---|
 | `{ "not": C }`, `{ "and": [C…] }`, `{ "or": [C…] }` | boolean composition |
 | `{ "gte": [path, n] }` | the field is numeric and ≥ `n` |
+| `{ "eq": [path, v] }` | the field is present and equals `v` |
 | `{ "flag": name }` | the named bit (from `flags`) is set in `Flags` |
 | `{ "missing": path }` | the field is absent |
 | `{ "verified": path }` | the account at `path` is verified in the registry |
@@ -95,9 +107,10 @@ field-risk reference at load time rather than skip the rule while signing.
 `currency` (160-bit code → name, with AMM-LP detection), `account` (registry
 name + verified mark + truncated address), `amount` (drops → XRP; issued
 amounts with issuer attribution), `rippleTime` (epoch 946684800 → ISO-8601),
-`decimal`, `flags` (named bits), `address` (truncated address, no registry
-lookup), `canonicalIssuers` (a currency's verified issuers, for messages),
-`raw`.
+`decimal`, `flags` (named bits), `enum:<name>` (a value looked up in the
+document's `enums`), `hexText` (hex-encoded ASCII such as `Domain` → text),
+`address` (truncated address, no registry lookup), `canonicalIssuers` (a
+currency's verified issuers, for messages), `raw`.
 
 ### Account registry
 
@@ -114,6 +127,15 @@ the same facts: `UNLIMITED_TRUSTLINE`, `UNVERIFIED_ISSUER`,
 `CURRENCY_IMPERSONATION`, `PARTIAL_PAYMENT`, `MISSING_DESTINATION_TAG`,
 `BATCH_MULTI_EXECUTION`, `NO_DISPLAY_METADATA`. Severities: `info | warn |
 danger`.
+
+Account-control codes, for the transaction types an attacker uses to take
+over or empty an account: `REGULAR_KEY_CHANGE` (danger), `REGULAR_KEY_REMOVED`
+(info), `SIGNER_LIST_CHANGE` (danger), `SIGNER_LIST_REMOVED` (info),
+`MASTER_KEY_DISABLED` (danger), `NFTOKEN_MINTER_SET` (warn),
+`CLAWBACK_ENABLED` (warn), `ACCOUNT_DELETION` (danger),
+`UNVERIFIED_DESTINATION` (warn). Handing signing power to another key is
+`danger` even when the user means it: a device cannot tell the user's own key
+from an attacker's, and the loss is total and irreversible.
 
 ### Composition (Batch, XLS-56)
 
@@ -164,6 +186,7 @@ add one metadata document each — no wallet code changes.
 
 - Registry governance: who reviews entries? (ERC-7730 precedent: PR review in a
   public repo + wallet-side pinning.)
-- Field paths: dotted paths cover today's schema; array indexing (e.g.
-  `Memos[0]`) is not yet specified.
+- Field paths: `*` maps over arrays for display, but conditions over arrays
+  (e.g. "any signer is unverified") and indexing (`Memos[0]`) are not yet
+  specified.
 - Localization of `title`/`intent` templates.

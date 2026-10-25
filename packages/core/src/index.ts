@@ -3,6 +3,10 @@ import { toTxJson } from "./decode";
 import { defaultRegistry } from "./registry";
 import { renderFromMetadata, validateMetadata } from "./metadata";
 import trustSetMetadata from "../metadata/TrustSet.json";
+import setRegularKeyMetadata from "../metadata/SetRegularKey.json";
+import signerListSetMetadata from "../metadata/SignerListSet.json";
+import accountSetMetadata from "../metadata/AccountSet.json";
+import accountDeleteMetadata from "../metadata/AccountDelete.json";
 import { renderPayment } from "./renderers/payment";
 import { renderOfferCreate } from "./renderers/offercreate";
 import { renderEscrowCreate } from "./renderers/escrowcreate";
@@ -12,7 +16,9 @@ import { renderFallback } from "./renderers/fallback";
 
 /** Built-in display metadata documents, keyed by transaction type. */
 const builtinMetadata: Record<string, MetadataDocument> = Object.fromEntries(
-  [trustSetMetadata as MetadataDocument].map((d) => [d.txType, validateMetadata(d)])
+  [trustSetMetadata, setRegularKeyMetadata, signerListSetMetadata, accountSetMetadata, accountDeleteMetadata]
+    .map((d) => d as unknown as MetadataDocument)
+    .map((d) => [d.txType, validateMetadata(d)])
 );
 
 /** Types not (yet) expressible as metadata: hand-written renderers. */

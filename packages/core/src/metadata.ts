@@ -1,4 +1,4 @@
-import type { DisplayField, DisplayIntent, MetadataDocument, Registry, RenderContext, RiskFlag, RiskWhen } from "./types";
+import type { DisplayField, DisplayIntent, MetadataDocument, MetadataField, Registry, RenderContext, RiskFlag, RiskWhen } from "./types";
 import { decodeCurrency, formatAccount, formatAmount, rippleTimeToISO, setFlags, truncateAddress } from "./format";
 import { canonicalIssuersFor } from "./registry";
 
@@ -8,21 +8,39 @@ import { canonicalIssuersFor } from "./registry";
  * template, flag names and risk rules — so new types need no code changes.
  */
 
-const CONDITION_OPS = ["not", "and", "or", "gte", "flag", "missing", "verified", "impersonates", "requiresTag"];
-const FORMATS = ["raw", "decimal", "currency", "account", "address", "amount", "rippleTime", "flags", "canonicalIssuers"];
+const CONDITION_OPS = ["not", "and", "or", "gte", "eq", "flag", "missing", "verified", "impersonates", "requiresTag"];
+const FORMATS = ["raw", "decimal", "currency", "account", "address", "amount", "rippleTime", "flags", "canonicalIssuers", "hexText"];
 
-/** Resolve a dotted field path ("LimitAmount.issuer") against a transaction. */
+/**
+ * Resolve a dotted field path ("LimitAmount.issuer") against a transaction.
+ * A `*` segment maps over an array ("SignerEntries.*.SignerEntry.Account").
+ */
 export function resolvePath(tx: Record<string, any>, path: string): unknown {
-  let cur: any = tx;
-  for (const key of path.split(".")) {
+  return walk(tx, path.split("."));
+}
+
+function walk(cur: any, keys: string[]): unknown {
+  for (let i = 0; i < keys.length; i++) {
+    if (keys[i] === "*") return Array.isArray(cur) ? cur.map((el) => walk(el, keys.slice(i + 1))) : undefined;
     if (cur === null || typeof cur !== "object") return undefined;
-    cur = cur[key];
+    cur = cur[keys[i]];
   }
   return cur;
 }
 
+/** Hex-encoded ASCII (e.g. AccountSet Domain) → text; non-printable input stays hex. */
+function hexToText(hex: string): string {
+  if (!/^([0-9a-fA-F]{2})+$/.test(hex)) return hex;
+  const bytes = hex.match(/../g)!.map((b) => parseInt(b, 16));
+  return bytes.every((b) => b >= 0x20 && b <= 0x7e) ? String.fromCharCode(...bytes) : hex;
+}
+
 function formatValue(value: unknown, format: string, doc: MetadataDocument, registry: Registry): string {
   if (value === undefined || value === null) return "—";
+  if (Array.isArray(value)) return value.map((v) => formatValue(v, format, doc, registry)).join(", ");
+  if (format.startsWith("enum:")) {
+    return doc.enums?.[format.slice(5)]?.[String(value)] ?? `unknown value (${value})`;
+  }
   switch (format) {
     case "currency":
       return decodeCurrency(String(value));
@@ -40,6 +58,8 @@ function formatValue(value: unknown, format: string, doc: MetadataDocument, regi
       return canonicalIssuersFor(decodeCurrency(String(value)), registry)
         .map((c) => `${c.name} (${truncateAddress(c.address)})`)
         .join(", ");
+    case "hexText":
+      return hexToText(String(value));
     default: // raw, decimal
       return String(value);
   }
@@ -64,6 +84,10 @@ function evaluate(when: RiskWhen, tx: Record<string, any>, doc: MetadataDocument
     case "gte": {
       const n = Number(resolvePath(tx, arg[0]));
       return Number.isFinite(n) && n >= arg[1];
+    }
+    case "eq": {
+      const v = resolvePath(tx, arg[0]);
+      return v !== undefined && String(v) === String(arg[1]);
     }
     case "flag": {
       const bit = doc.flags?.[arg];
@@ -96,6 +120,16 @@ function validateWhen(when: RiskWhen, where: string): void {
   if (keys[0] === "and" || keys[0] === "or") (arg as RiskWhen[]).forEach((c) => validateWhen(c, where));
 }
 
+function validateFormat(format: string, doc: MetadataDocument, where: string): void {
+  const ok = format.startsWith("enum:") ? doc.enums?.[format.slice(5)] !== undefined : FORMATS.includes(format);
+  if (!ok) throw new Error(`${where}: unknown format "${format}"`);
+}
+
+/** Formats named inside a template ("{path|format}"). */
+function templateFormats(template: string): string[] {
+  return [...template.matchAll(/\{[^}|]+\|([^}]+)\}/g)].map((m) => m[1].trim());
+}
+
 /**
  * Check a document's structure up front, so a malformed document fails at
  * load time rather than silently dropping a warning at signing time.
@@ -103,9 +137,14 @@ function validateWhen(when: RiskWhen, where: string): void {
 export function validateMetadata(doc: MetadataDocument): MetadataDocument {
   const where = `metadata ${doc?.txType ?? "?"}`;
   if (!doc?.txType || !doc.title || !doc.intent) throw new Error(`${where}: txType, title and intent are required`);
-  for (const f of doc.fields ?? []) {
-    if (f.format && !FORMATS.includes(f.format)) throw new Error(`${where}: unknown format "${f.format}"`);
+  const intents = typeof doc.intent === "string" ? [{ text: doc.intent }] : doc.intent;
+  if (!Array.isArray(intents) || !intents.length || intents[intents.length - 1].when) {
+    throw new Error(`${where}: intent variants must end with one that has no "when"`);
   }
+  for (const i of intents) if (i.when) validateWhen(i.when, `${where} intent`);
+  const templates = [...intents.map((i) => i.text), ...(doc.risks ?? []).map((r) => r.message)];
+  for (const t of templates) for (const fmt of templateFormats(t)) validateFormat(fmt, doc, where);
+  for (const f of doc.fields ?? []) if (f.format) validateFormat(f.format, doc, where);
   const codes = new Set((doc.risks ?? []).map((r) => r.code));
   for (const r of doc.risks ?? []) validateWhen(r.when, `${where} risk ${r.code}`);
   for (const f of doc.fields ?? []) {
@@ -126,24 +165,32 @@ export function renderFromMetadata(doc: MetadataDocument, tx: Record<string, any
   }));
 
   const fields: DisplayField[] = [];
-  for (const f of doc.fields ?? []) {
-    const value = formatValue(resolvePath(tx, f.path), f.format ?? "raw", doc, registry);
-    if (f.hideIfEmpty && (value === "" || value === "—")) continue;
+  const push = (f: MetadataField, label: string, raw: unknown) => {
+    const value = formatValue(raw, f.format ?? "raw", doc, registry);
+    if (f.hideIfEmpty && (value === "" || value === "—")) return;
     const linked = fired.filter((r) => f.risks?.includes(r.code));
     const notes = linked.map((r) => r.short).filter(Boolean);
-    const raw = resolvePath(tx, f.path);
     fields.push({
-      label: f.label,
+      label,
       value: notes.length ? `${value} (${notes.join(", ")})` : value,
       risk: linked.find((r) => r.severity === "danger")?.severity ?? linked[0]?.severity,
       ...(f.format === "account" && typeof raw === "string" ? { account: raw } : {}),
     });
+  };
+  for (const f of doc.fields ?? []) {
+    const raw = resolvePath(tx, f.path);
+    // A list of accounts gets one field each, so the device's verified-name rule applies per account
+    if (f.format === "account" && Array.isArray(raw)) raw.forEach((a, i) => push(f, `${f.label} ${i + 1}`, a));
+    else push(f, f.label, raw);
   }
+
+  const intents = typeof doc.intent === "string" ? [{ text: doc.intent }] : doc.intent;
+  const intent = intents.find((i) => !i.when || evaluate(i.when, tx, doc, registry))!;
 
   return {
     txType: doc.txType,
     title: doc.title,
-    summary: fillTemplate(doc.intent, tx, doc, registry),
+    summary: fillTemplate(intent.text, tx, doc, registry),
     fields,
     warnings,
     raw: tx,

@@ -81,6 +81,22 @@ export const samples: { name: string; tx: Record<string, unknown> }[] = [
     },
   },
   {
+    name: "Account takeover — SetRegularKey to an unknown key",
+    tx: {
+      TransactionType: "SetRegularKey",
+      Account: SOME_ACCOUNT,
+      RegularKey: SCAM_ISSUER,
+    },
+  },
+  {
+    name: "Account drain — AccountDelete to an unknown account",
+    tx: {
+      TransactionType: "AccountDelete",
+      Account: SOME_ACCOUNT,
+      Destination: SCAM_ISSUER,
+    },
+  },
+  {
     name: "Batch — 2 inner transactions hidden behind one approval",
     tx: {
       TransactionType: "Batch",

@@ -1,0 +1,27 @@
+{
+  "version": "0.1",
+  "txType": "SetRegularKey",
+  "title": "Set regular key",
+  "intent": [
+    { "when": { "missing": "RegularKey" }, "text": "Remove the regular key of {Account|address}." },
+    { "text": "Let {RegularKey|account} sign any transaction for {Account|address}." }
+  ],
+  "fields": [
+    { "path": "RegularKey", "label": "New key", "format": "account", "risks": ["REGULAR_KEY_CHANGE"], "hideIfEmpty": true }
+  ],
+  "risks": [
+    {
+      "code": "REGULAR_KEY_CHANGE",
+      "severity": "danger",
+      "when": { "not": { "missing": "RegularKey" } },
+      "short": "full account control",
+      "message": "{RegularKey|address} will be able to sign any transaction for this account, including sending all of its funds. Only continue if you hold that key yourself."
+    },
+    {
+      "code": "REGULAR_KEY_REMOVED",
+      "severity": "info",
+      "when": { "missing": "RegularKey" },
+      "message": "The current regular key will no longer be able to sign for this account."
+    }
+  ]
+}

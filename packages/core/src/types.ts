@@ -56,6 +56,7 @@ export type RiskWhen =
   | { and: RiskWhen[] }
   | { or: RiskWhen[] }
   | { gte: [string, number] }
+  | { eq: [string, string | number] }
   | { flag: string }
   | { missing: string }
   | { verified: string }
@@ -81,14 +82,22 @@ export interface MetadataRisk {
   short?: string;
 }
 
+/** One summary variant; the last one has no `when` and is the default. */
+export interface MetadataIntent {
+  when?: RiskWhen;
+  text: string;
+}
+
 /** Display metadata document: one per transaction type (see spec). */
 export interface MetadataDocument {
   version: string;
   txType: string;
   title: string;
-  /** Summary template: "{path}" or "{path|format}" */
-  intent: string;
+  /** Summary template ("{path}" or "{path|format}"), or variants: the first whose `when` holds is used */
+  intent: string | MetadataIntent[];
   flags?: Record<string, number>;
+  /** Named value maps for the `enum:<name>` format, e.g. AccountSet's SetFlag numbers */
+  enums?: Record<string, Record<string, string>>;
   fields: MetadataField[];
   risks?: MetadataRisk[];
 }

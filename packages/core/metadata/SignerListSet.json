@@ -1,0 +1,28 @@
+{
+  "version": "0.1",
+  "txType": "SignerListSet",
+  "title": "Set signer list",
+  "intent": [
+    { "when": { "eq": ["SignerQuorum", 0] }, "text": "Delete the signer list of {Account|address}." },
+    { "text": "Let the signers below sign for {Account|address} together, once their weights reach {SignerQuorum}." }
+  ],
+  "fields": [
+    { "path": "SignerQuorum", "label": "Quorum", "format": "decimal" },
+    { "path": "SignerEntries.*.SignerEntry.Account", "label": "Signer", "format": "account", "risks": ["SIGNER_LIST_CHANGE"], "hideIfEmpty": true },
+    { "path": "SignerEntries.*.SignerEntry.SignerWeight", "label": "Weights", "format": "decimal", "hideIfEmpty": true }
+  ],
+  "risks": [
+    {
+      "code": "SIGNER_LIST_CHANGE",
+      "severity": "danger",
+      "when": { "not": { "eq": ["SignerQuorum", 0] } },
+      "message": "{SignerEntries.*.SignerEntry.Account|address} will be able to sign for this account together, including sending all of its funds. Only continue if you hold enough of these keys to reach a weight of {SignerQuorum}."
+    },
+    {
+      "code": "SIGNER_LIST_REMOVED",
+      "severity": "info",
+      "when": { "eq": ["SignerQuorum", 0] },
+      "message": "The current signer list will no longer be able to sign for this account."
+    }
+  ]
+}

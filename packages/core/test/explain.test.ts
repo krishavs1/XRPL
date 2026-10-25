@@ -180,35 +180,95 @@ describe("display metadata documents", () => {
 
   it("supports a new transaction type with no code changes", () => {
     const intent = explain(
-      { TransactionType: "SetRegularKey", Account: ACCOUNT_ZERO, RegularKey: ACCOUNT_ONE },
+      { TransactionType: "Clawback", Account: ACCOUNT_ZERO, Amount: { currency: "USD", issuer: ACCOUNT_ONE, value: "50" } },
       {
         metadata: [
           {
             version: "0.1",
-            txType: "SetRegularKey",
-            title: "Set regular key",
-            intent: "Let {RegularKey|account} sign for this account.",
-            fields: [{ path: "RegularKey", label: "New key", format: "account", risks: ["KEY_HANDOVER"] }],
+            txType: "Clawback",
+            title: "Claw back tokens",
+            intent: "Take back {Amount.value} {Amount.currency|currency} from {Amount.issuer|account}.",
+            fields: [{ path: "Amount.issuer", label: "From", format: "account", risks: ["TOKEN_CLAWBACK"] }],
             risks: [
               {
-                code: "KEY_HANDOVER",
+                code: "TOKEN_CLAWBACK",
                 severity: "danger",
-                when: { not: { missing: "RegularKey" } },
-                message: "{RegularKey|address} gets full control of this account.",
+                when: { not: { missing: "Amount" } },
+                message: "{Amount.issuer|address} loses {Amount.value} {Amount.currency|currency}.",
               },
             ],
           },
         ],
       }
     );
-    expect(intent.title).toBe("Set regular key");
-    expect(intent.warnings.map((w) => w.code)).toEqual(["KEY_HANDOVER"]);
+    expect(intent.title).toBe("Claw back tokens");
+    expect(intent.warnings.map((w) => w.code)).toEqual(["TOKEN_CLAWBACK"]);
     expect(intent.fields[0].risk).toBe("danger");
   });
 
   it("rejects malformed documents at load time", () => {
     const bad = { version: "0.1", txType: "X", title: "X", intent: "X", fields: [], risks: [{ code: "R", severity: "warn", when: { eval: "1" }, message: "" }] };
     expect(() => explain({ TransactionType: "X" }, { metadata: [bad as any] })).toThrow(/condition/);
+    const badEnum = { version: "0.1", txType: "X", title: "X", intent: "{SetFlag|enum:nope}", fields: [] };
+    expect(() => explain({ TransactionType: "X" }, { metadata: [badEnum as any] })).toThrow(/format/);
+    const noDefault = { version: "0.1", txType: "X", title: "X", intent: [{ when: { missing: "A" }, text: "X" }], fields: [] };
+    expect(() => explain({ TransactionType: "X" }, { metadata: [noDefault as any] })).toThrow(/intent/);
+  });
+});
+
+describe("account-takeover types (metadata documents)", () => {
+  const codes = (tx: object) => explain(tx).warnings.map((w) => `${w.severity}:${w.code}`);
+
+  it("SetRegularKey: handing over the key is danger, removing it is info", () => {
+    const intent = explain({ TransactionType: "SetRegularKey", Account: ACCOUNT_ZERO, RegularKey: ACCOUNT_ONE });
+    expect(intent.warnings.map((w) => w.code)).toEqual(["REGULAR_KEY_CHANGE"]);
+    expect(intent.fields[0]).toMatchObject({ label: "New key", risk: "danger", account: ACCOUNT_ONE });
+    const removed = explain({ TransactionType: "SetRegularKey", Account: ACCOUNT_ZERO });
+    expect(removed.summary).toMatch(/^Remove the regular key/);
+    expect(codes({ TransactionType: "SetRegularKey", Account: ACCOUNT_ZERO })).toEqual(["info:REGULAR_KEY_REMOVED"]);
+  });
+
+  it("SignerListSet: each signer is its own account field, through the binary codec", () => {
+    const tx = {
+      TransactionType: "SignerListSet",
+      Account: ACCOUNT_ZERO,
+      Fee: "12",
+      Sequence: 1,
+      SignerQuorum: 2,
+      SignerEntries: [
+        { SignerEntry: { Account: ACCOUNT_ONE, SignerWeight: 1 } },
+        { SignerEntry: { Account: "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B", SignerWeight: 1 } },
+      ],
+    };
+    const intent = explain(encode(tx as any));
+    expect(intent.warnings.map((w) => w.code)).toEqual(["SIGNER_LIST_CHANGE"]);
+    expect(intent.fields.map((f) => f.label)).toEqual(["Quorum", "Signer 1", "Signer 2", "Weights"]);
+    const screens = toDeviceScreens(intent, defaultRegistry).map((s) => s.body);
+    expect(screens).toContain("rrrrrrr…Zbvji · unverified");
+    expect(screens).toContain("Bitstamp ✓ · rvYAfWj…bs59B");
+    expect(codes({ TransactionType: "SignerListSet", Account: ACCOUNT_ZERO, SignerQuorum: 0 })).toEqual(["info:SIGNER_LIST_REMOVED"]);
+  });
+
+  it("AccountSet: disabling the master key is danger; ordinary settings are quiet", () => {
+    const intent = explain({ TransactionType: "AccountSet", Account: ACCOUNT_ZERO, SetFlag: 4 });
+    expect(intent.summary).toMatch(/^Disable the master key/);
+    expect(intent.fields[0].value).toBe("Disable master key (you may lose access)");
+    expect(intent.warnings.map((w) => w.code)).toEqual(["MASTER_KEY_DISABLED"]);
+    const benign = explain({ TransactionType: "AccountSet", Account: ACCOUNT_ZERO, ClearFlag: 9, Domain: "6578616D706C652E636F6D" });
+    expect(benign.warnings).toEqual([]);
+    expect(benign.summary).toMatch(/^Turn off "Deposit authorization"/);
+    expect(benign.fields.find((f) => f.label === "Domain")?.value).toBe("example.com");
+  });
+
+  it("AccountDelete: always danger, plus destination checks", () => {
+    expect(codes({ TransactionType: "AccountDelete", Account: ACCOUNT_ZERO, Destination: ACCOUNT_ONE })).toEqual([
+      "danger:ACCOUNT_DELETION",
+      "warn:UNVERIFIED_DESTINATION",
+    ]);
+    expect(codes({ TransactionType: "AccountDelete", Account: ACCOUNT_ZERO, Destination: "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B" })).toEqual([
+      "danger:ACCOUNT_DELETION",
+      "warn:MISSING_DESTINATION_TAG",
+    ]);
   });
 });
 

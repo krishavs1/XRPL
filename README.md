@@ -26,10 +26,11 @@ equivalent.
    profile. `spec/DISCUSSION-POST.md` is the pre-proposal write-up for
    XRPL-Standards.
 2. **`packages/core`** (`xrpl-clear-signing`) — the reference parser:
-   `explain(blobOrJson) → DisplayIntent` with typed renderers for TrustSet,
-   Payment, OfferCreate, EscrowCreate, AMMDeposit, and Batch, plus a safe
-   fallback for every other type, and `simulateTx()` for XLS-69 dry-run
-   enrichment.
+   `explain(blobOrJson) → DisplayIntent` for TrustSet, SetRegularKey,
+   SignerListSet, AccountSet and AccountDelete (JSON metadata documents) and
+   Payment, OfferCreate, EscrowCreate, AMMDeposit and Batch (TypeScript
+   renderers), plus a safe fallback for every other type, and `simulateTx()`
+   for XLS-69 dry-run enrichment.
 3. **`apps/demo`** — a web tool: paste hex or JSON, see the decoded intent and
    risk warnings, simulate against the network, stream live ledger
    transactions, and sign on a Ledger (Speculos emulator or a real device).
@@ -97,7 +98,7 @@ PITCH.md        pitch notes and prize-track mapping
 
 ## Status
 
-- [x] Parser: 6 transaction types (TrustSet via a JSON metadata document) + safe fallback
+- [x] Parser: 10 transaction types (5 via JSON metadata documents) + safe fallback
 - [x] Risk warnings incl. impersonation, partial-payment, Batch, AMM deposit risks
 - [x] `simulate` (XLS-69) dry runs with projected balance changes
 - [x] Live ledger transaction feed (WebSocket `subscribe`)
@@ -111,9 +112,10 @@ PITCH.md        pitch notes and prize-track mapping
 
 ### Spec vs. implementation gaps
 
-- [x] JSON metadata documents: TrustSet renders from
-      `packages/core/metadata/TrustSet.json` via the interpreter in
-      `src/metadata.ts`; callers can add types with `explain(tx, { metadata })`.
+- [x] JSON metadata documents: TrustSet, SetRegularKey, SignerListSet,
+      AccountSet and AccountDelete render from `packages/core/metadata/*.json`
+      via the interpreter in `src/metadata.ts`; callers can add types with
+      `explain(tx, { metadata })`.
 - [ ] Move Payment, OfferCreate, EscrowCreate and AMMDeposit to metadata
       documents (Batch stays code: it's a pipeline rule).
 - [x] Device profile: `toDeviceScreens()` in `packages/core/src/device.ts`
@@ -138,8 +140,8 @@ PITCH.md        pitch notes and prize-track mapping
       signer (XLS-56 `BatchSigners`).
 - [ ] Payment: warn on unverified destinations and run currency
       impersonation checks on issued `Amount` / `SendMax`.
-- [ ] Renderers for account-takeover / drain types: `SetRegularKey`,
-      `SignerListSet`, `AccountSet`, `AccountDelete` (currently raw fallback).
+- [x] Account-takeover / drain types as metadata documents: `SetRegularKey`,
+      `SignerListSet`, `AccountSet`, `AccountDelete`.
 - [ ] Turn `simulate` results into risk codes (non-`tesSUCCESS` result,
       large XRP balance drop).
 

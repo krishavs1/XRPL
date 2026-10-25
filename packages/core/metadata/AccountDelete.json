@@ -1,0 +1,31 @@
+{
+  "version": "0.1",
+  "txType": "AccountDelete",
+  "title": "Delete account",
+  "intent": "Delete {Account|address} and send all of its remaining XRP to {Destination|account}.",
+  "fields": [
+    { "path": "Destination", "label": "All XRP to", "format": "account", "risks": ["UNVERIFIED_DESTINATION", "MISSING_DESTINATION_TAG"] },
+    { "path": "DestinationTag", "label": "Destination tag", "format": "raw", "hideIfEmpty": true }
+  ],
+  "risks": [
+    {
+      "code": "ACCOUNT_DELETION",
+      "severity": "danger",
+      "when": { "eq": ["TransactionType", "AccountDelete"] },
+      "message": "Deletes this account and sends everything it holds in XRP to {Destination|address}. This cannot be undone."
+    },
+    {
+      "code": "UNVERIFIED_DESTINATION",
+      "severity": "warn",
+      "when": { "not": { "verified": "Destination" } },
+      "short": "unverified",
+      "message": "{Destination|address} is not in the verified registry. Check the full address before sending the account's whole balance there."
+    },
+    {
+      "code": "MISSING_DESTINATION_TAG",
+      "severity": "warn",
+      "when": { "and": [{ "requiresTag": "Destination" }, { "missing": "DestinationTag" }] },
+      "message": "{Destination|account} requires a destination tag; funds sent without one may be lost or delayed."
+    }
+  ]
+}
