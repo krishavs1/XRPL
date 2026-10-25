@@ -41,6 +41,16 @@ export function SignScreen({ intent, endpoint, onPrepared, onAddress, onStatus, 
   const dangers = intent?.warnings.filter((w) => w.severity === "danger").length ?? 0;
   const blocked = dangers > 0 && !acknowledged;
 
+  // A Batch replayed from the live feed carries OTHER accounts' inner
+  // transactions; signing those needs their BatchSigners, which we can't
+  // produce. Viewing and simulating stay available; signing is foreign.
+  const foreignBatch =
+    tx?.TransactionType === "Batch" &&
+    Array.isArray((tx as any).RawTransactions) &&
+    (tx as any).RawTransactions.some(
+      (w: any) => (w?.RawTransaction ?? w)?.Account && (w?.RawTransaction ?? w).Account !== address
+    );
+
   // A new transaction needs a fresh acknowledgement, never a carried-over one.
   const txKey = JSON.stringify(tx);
   useEffect(() => setAcknowledged(false), [txKey]);
@@ -168,7 +178,8 @@ export function SignScreen({ intent, endpoint, onPrepared, onAddress, onStatus, 
           <button
             className={dangers ? "danger" : "accent"}
             onClick={sign}
-            disabled={busy || !signer || !tx || balance === null || blocked}
+            disabled={busy || !signer || !tx || balance === null || blocked || foreignBatch}
+            title={foreignBatch ? "This Batch contains other accounts' inner transactions; signing it requires their BatchSigners. Load the Batch fixture to sign one of your own." : undefined}
           >
             {dangers ? "Sign anyway" : "Sign on device"}
           </button>
