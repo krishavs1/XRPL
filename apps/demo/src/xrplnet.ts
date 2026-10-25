@@ -34,8 +34,20 @@ export async function simulateViaWs(
   txJson: Record<string, unknown>
 ): Promise<SimulationResult> {
   const c = await connected(url);
+  // `simulate` only accepts unsigned drafts, and a transaction taken from the
+  // live ledger carries a signature and an already-consumed Sequence. Strip
+  // those so any transaction — including a validated one from the feed —
+  // simulates as a clean "what would this do right now" replay (the server
+  // autofills Sequence and fee).
+  const draft = { ...txJson };
+  delete draft.TxnSignature;
+  delete draft.Signers;
+  delete draft.SigningPubKey;
+  delete draft.Sequence;
+  delete draft.LastLedgerSequence;
+  delete (draft as any).hash;
   try {
-    const res: any = await c.request({ command: "simulate", tx_json: txJson } as any);
+    const res: any = await c.request({ command: "simulate", tx_json: draft } as any);
     const r = res?.result ?? {};
     let balanceChanges: SimulationResult["balanceChanges"];
     try {
