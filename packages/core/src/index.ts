@@ -5,6 +5,7 @@ import { renderTrustSet } from "./renderers/trustset";
 import { renderPayment } from "./renderers/payment";
 import { renderOfferCreate } from "./renderers/offercreate";
 import { renderEscrowCreate } from "./renderers/escrowcreate";
+import { renderAMMDeposit } from "./renderers/ammdeposit";
 import { renderBatch } from "./renderers/batch";
 import { renderFallback } from "./renderers/fallback";
 
@@ -13,6 +14,7 @@ const renderers: Record<string, Renderer> = {
   Payment: renderPayment,
   OfferCreate: renderOfferCreate,
   EscrowCreate: renderEscrowCreate,
+  AMMDeposit: renderAMMDeposit,
   Batch: renderBatch,
 };
 

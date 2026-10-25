@@ -70,6 +70,17 @@ export const samples: { name: string; tx: Record<string, unknown> }[] = [
     },
   },
   {
+    name: "AMM deposit — single-sided 100 XRP into XRP/RLUSD, no bound",
+    tx: {
+      TransactionType: "AMMDeposit",
+      Account: SOME_ACCOUNT,
+      Asset: { currency: "XRP" },
+      Asset2: { currency: RLUSD_HEX, issuer: DEMO_RLUSD_ISSUER },
+      Amount: "100000000",
+      Flags: 0x00080000,
+    },
+  },
+  {
     name: "Batch — 2 inner transactions hidden behind one approval",
     tx: {
       TransactionType: "Batch",

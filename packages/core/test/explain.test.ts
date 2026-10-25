@@ -109,6 +109,41 @@ describe("explain: Batch unfolds inner transactions", () => {
   });
 });
 
+describe("explain: AMMDeposit", () => {
+  const pool = {
+    Asset: { currency: "XRP" },
+    Asset2: { currency: RLUSD_HEX, issuer: ACCOUNT_ONE },
+  };
+
+  it("flags single-sided deposits without a bound", () => {
+    const intent = explain({
+      TransactionType: "AMMDeposit",
+      Account: ACCOUNT_ZERO,
+      ...pool,
+      Amount: "100000000",
+      Flags: 0x00080000, // tfSingleAsset
+    });
+    const codes = intent.warnings.map((w) => w.code);
+    expect(codes).toContain("SINGLE_SIDED_DEPOSIT");
+    expect(codes).toContain("NO_DEPOSIT_BOUND");
+  });
+
+  it("flags empty-pool seeding and missing mode flags", () => {
+    const seeding = explain({
+      TransactionType: "AMMDeposit",
+      Account: ACCOUNT_ZERO,
+      ...pool,
+      Amount: "100000000",
+      Amount2: { currency: RLUSD_HEX, issuer: ACCOUNT_ONE, value: "250" },
+      Flags: 0x00800000, // tfTwoAssetIfEmpty
+    });
+    expect(seeding.warnings.map((w) => w.code)).toContain("POOL_SEEDING");
+
+    const noMode = explain({ TransactionType: "AMMDeposit", Account: ACCOUNT_ZERO, ...pool, Amount: "1" });
+    expect(noMode.warnings.map((w) => w.code)).toContain("AMM_MODE_INVALID");
+  });
+});
+
 describe("explain: unknown type falls back safely", () => {
   it("renders raw fields with a warning", () => {
     const intent = explain({ TransactionType: "AMMBid", Account: ACCOUNT_ZERO, BidMax: "1000" });
