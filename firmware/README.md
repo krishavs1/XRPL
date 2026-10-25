@@ -2,10 +2,16 @@
 
 `clear-signing-warning.patch` modifies the official Ledger XRP app
 ([LedgerHQ/app-xrp](https://github.com/LedgerHQ/app-xrp) @ `a7efd903`, v2.8.1)
-so the device itself surfaces a clear-signing risk warning. On a TrustSet whose
-issuer's 20-byte account ID is not in a baked-in verified set, the review flow
-inserts a **SECURITY WARNING** screen before the transaction fields — on the
-device's own secure screen, not in companion software.
+so the device itself surfaces clear-signing risk warnings, inserted as the
+first screen of the native review — on the device's own secure screen, not in
+companion software. Three rules, matching the standard's headline risks:
+
+- **TrustSet** whose issuer's 20-byte account ID is not in a baked-in verified
+  set → unverified-issuer / impersonation warning;
+- **AccountDelete** → the account and everything it holds goes to the
+  destination, irreversibly;
+- **SetRegularKey** → signing control is handed to another key (account
+  takeover when the key isn't yours).
 
 This is the firmware half of the standard: the web demo's "device profile"
 panel shows what full metadata-driven rendering looks like; this patch proves

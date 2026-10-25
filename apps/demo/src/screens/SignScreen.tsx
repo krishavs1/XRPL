@@ -124,7 +124,7 @@ export function SignScreen({ intent, endpoint, onPrepared, onAddress, onStatus, 
               <strong>{address}</strong> ·{" "}
               {balance === null ? (
                 <>
-                  unfunded · <button onClick={faucet} disabled={busy}>Get test XRP</button>
+                  unfunded · <button onClick={faucet} disabled={busy || !address}>Get test XRP</button>
                 </>
               ) : (
                 `${balance} XRP`

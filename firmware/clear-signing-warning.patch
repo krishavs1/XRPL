@@ -1,5 +1,5 @@
 diff --git a/src/ui/transaction/review_menu_nbgl.c b/src/ui/transaction/review_menu_nbgl.c
-index aff565e..7fa27cb 100644
+index aff565e..d76af53 100644
 --- a/src/ui/transaction/review_menu_nbgl.c
 +++ b/src/ui/transaction/review_menu_nbgl.c
 @@ -15,8 +15,11 @@
@@ -14,7 +14,7 @@ index aff565e..7fa27cb 100644
  #include "idle_menu.h"
  #include "nbgl_use_case.h"
  #include "review_menu.h"
-@@ -24,6 +27,67 @@
+@@ -24,6 +27,96 @@
  
  #define MAX_FIELDS_PER_PAGE 8
  
@@ -23,7 +23,9 @@ index aff565e..7fa27cb 100644
 +// Here the device itself flags an unverified trustline issuer, the way a wallet
 +// that consumed a clear-signing metadata registry would. The verified set is
 +// baked in for the demo; a production app would pin a reviewed registry hash.
++#define TX_TYPE_SET_REGULAR_KEY 5
 +#define TX_TYPE_TRUST_SET 20
++#define TX_TYPE_ACCOUNT_DELETE 21
 +
 +// Raw 20-byte account IDs (no base58/hashing needed at review time):
 +// rFKWLRVzHatrpvFEvYv5xxVLsvuoXZppu (RLUSD demo issuer, testnet)
@@ -37,9 +39,17 @@ index aff565e..7fa27cb 100644
 +
 +static uint8_t num_warnings;
 +static const char *const WARNING_TITLE = "SECURITY WARNING";
-+static const char *const WARNING_TEXT =
++static const char *warning_text;
++
++static const char *const WARN_UNVERIFIED_ISSUER =
 +    "Unverified issuer. Scam tokens impersonate real assets - verify the "
 +    "issuer before trusting this line.";
++static const char *const WARN_ACCOUNT_DELETE =
++    "Deletes this account and sends everything it holds to the destination. "
++    "This cannot be undone.";
++static const char *const WARN_REGULAR_KEY =
++    "Hands signing control of this account to the regular key. If that key "
++    "is not yours, this is an account takeover.";
 +
 +static bool is_verified_issuer(const uint8_t *account_id) {
 +    for (size_t i = 0; i < sizeof(VERIFIED_ISSUER_IDS) / sizeof(VERIFIED_ISSUER_IDS[0]); i++) {
@@ -52,29 +62,48 @@ index aff565e..7fa27cb 100644
 +
 +static void detect_warnings(parseResult_t *tx) {
 +    num_warnings = 0;
++    warning_text = NULL;
 +
-+    bool is_trust_set = false;
++    uint16_t tx_type = 0xFFFF;
 +    for (uint8_t i = 0; i < tx->num_fields; i++) {
 +        field_t *f = &tx->fields[i];
-+        if (f->data_type == STI_UINT16 && f->id == XRP_UINT16_TRANSACTION_TYPE &&
-+            f->data.u16 == TX_TYPE_TRUST_SET) {
-+            is_trust_set = true;
++        if (f->data_type == STI_UINT16 && f->id == XRP_UINT16_TRANSACTION_TYPE) {
++            tx_type = f->data.u16;
 +            break;
 +        }
 +    }
-+    if (!is_trust_set) {
-+        return;
-+    }
 +
-+    for (uint8_t i = 0; i < tx->num_fields; i++) {
-+        field_t *f = &tx->fields[i];
-+        if (f->data_type == STI_ACCOUNT && f->id == XRP_ACCOUNT_ISSUER &&
-+            f->data.account != NULL) {
-+            if (!is_verified_issuer(f->data.account->buf)) {
-+                num_warnings = 1;
++    switch (tx_type) {
++        case TX_TYPE_TRUST_SET:
++            for (uint8_t i = 0; i < tx->num_fields; i++) {
++                field_t *f = &tx->fields[i];
++                if (f->data_type == STI_ACCOUNT && f->id == XRP_ACCOUNT_ISSUER &&
++                    f->data.account != NULL) {
++                    if (!is_verified_issuer(f->data.account->buf)) {
++                        warning_text = WARN_UNVERIFIED_ISSUER;
++                    }
++                    break;
++                }
 +            }
 +            break;
-+        }
++        case TX_TYPE_ACCOUNT_DELETE:
++            warning_text = WARN_ACCOUNT_DELETE;
++            break;
++        case TX_TYPE_SET_REGULAR_KEY:
++            for (uint8_t i = 0; i < tx->num_fields; i++) {
++                field_t *f = &tx->fields[i];
++                if (f->data_type == STI_ACCOUNT && f->id == XRP_ACCOUNT_REGULAR_KEY) {
++                    warning_text = WARN_REGULAR_KEY;
++                    break;
++                }
++            }
++            break;
++        default:
++            break;
++    }
++
++    if (warning_text != NULL) {
++        num_warnings = 1;
 +    }
 +}
 +// -----------------------------------------------------------------------------
@@ -82,14 +111,14 @@ index aff565e..7fa27cb 100644
  // Globals
  static field_value_t txFieldValueStrings[MAX_FIELDS_PER_PAGE];
  static field_name_t txFieldNameStrings[MAX_FIELDS_PER_PAGE];
-@@ -48,6 +112,14 @@ static void build_title(const field_t* field, field_name_t* title) {
+@@ -48,6 +141,14 @@ static void build_title(const field_t* field, field_name_t* title) {
  
  // function called by NBGL to get the pair indexed by "index"
  static nbgl_layoutTagValue_t* getPair(uint8_t index) {
 +    // Injected clear-signing warnings come first, before the transaction fields.
 +    if (index < num_warnings) {
 +        pair.item = WARNING_TITLE;
-+        pair.value = WARNING_TEXT;
++        pair.value = warning_text;
 +        return &pair;
 +    }
 +    index -= num_warnings;
@@ -97,7 +126,7 @@ index aff565e..7fa27cb 100644
      uint8_t arr_idx = index % MAX_FIELDS_PER_PAGE;
      memset(&txFieldValueStrings[arr_idx], 0, sizeof(field_value_t));
      memset(&txFieldNameStrings[arr_idx], 0, sizeof(field_name_t));
-@@ -76,6 +148,7 @@ void display_blind_signed_review(parseResult_t* transaction_param,
+@@ -76,6 +177,7 @@ void display_blind_signed_review(parseResult_t* transaction_param,
                                   resultAction_t callback) {
      transaction = transaction_param;
      approval_menu_callback = callback;
@@ -105,7 +134,7 @@ index aff565e..7fa27cb 100644
  
      memset(&txFieldValueStrings, 0, sizeof(txFieldValueStrings));
      memset(&txFieldNameStrings, 0, sizeof(txFieldNameStrings));
-@@ -102,8 +175,11 @@ void display_review_menu(parseResult_t* transaction_param,
+@@ -102,8 +204,11 @@ void display_review_menu(parseResult_t* transaction_param,
      memset(&txFieldNameStrings, 0, sizeof(txFieldNameStrings));
      memset(&pair, 0, sizeof(pair));
  
