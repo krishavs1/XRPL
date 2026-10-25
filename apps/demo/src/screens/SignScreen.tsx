@@ -136,7 +136,7 @@ export function SignScreen({ intent, endpoint, onPrepared, onAddress, onStatus }
       <div className="device-compare">
         <figure>
           <figcaption>
-            <strong>Today</strong> · Ledger XRP app
+            <strong>Real firmware</strong> · Ledger XRP app, our fork (stock shows no warnings)
           </figcaption>
           {transport === "speculos" ? (
             <SpeculosScreen url={SPECULOS_URL} />
