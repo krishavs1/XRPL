@@ -4,9 +4,14 @@
   "title": "Send payment",
   "intent": [
     {
+      "when": { "and": [{ "flag": "tfPartialPayment" }, { "missing": "Amount" }] },
+      "text": "Send up to {DeliverMax|amount} to {Destination|account} (partial payment!)."
+    },
+    {
       "when": { "flag": "tfPartialPayment" },
       "text": "Send up to {Amount|amount} to {Destination|account} (partial payment!)."
     },
+    { "when": { "missing": "Amount" }, "text": "Send {DeliverMax|amount} to {Destination|account}." },
     { "text": "Send {Amount|amount} to {Destination|account}." }
   ],
   "flags": {
@@ -16,8 +21,8 @@
   },
   "fields": [
     { "path": "Destination", "label": "To", "format": "account" },
-    { "path": "Amount", "label": "Amount", "format": "amount", "risks": ["PARTIAL_PAYMENT"] },
-    { "path": "DeliverMax", "label": "Amount (deliver max)", "format": "amount", "hideIfEmpty": true },
+    { "path": "Amount", "label": "Amount", "format": "amount", "risks": ["PARTIAL_PAYMENT"], "hideIfEmpty": true },
+    { "path": "DeliverMax", "label": "Amount", "format": "amount", "risks": ["PARTIAL_PAYMENT"], "hideIfEmpty": true },
     { "path": "SendMax", "label": "Send max", "format": "amount", "hideIfEmpty": true },
     { "path": "DeliverMin", "label": "Deliver at least", "format": "amount", "hideIfEmpty": true },
     { "path": "DestinationTag", "label": "Destination tag", "format": "decimal", "hideIfEmpty": true },
@@ -37,7 +42,7 @@
       "when": {
         "and": [
           { "flag": "tfPartialPayment" },
-          { "isXrp": "Amount" },
+          { "or": [{ "isXrp": "Amount" }, { "isXrp": "DeliverMax" }] },
           { "or": [{ "missing": "SendMax" }, { "isXrp": "SendMax" }] }
         ]
       },

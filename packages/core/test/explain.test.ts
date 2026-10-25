@@ -47,6 +47,25 @@ describe("explain: malicious TrustSet", () => {
   });
 });
 
+describe("explain: DeliverMax (API v2 Payment shape)", () => {
+  it("reads the amount from DeliverMax when Amount is absent", () => {
+    const intent = explain({ TransactionType: "Payment", Account: ACCOUNT_ZERO, Destination: ACCOUNT_ONE, DeliverMax: "100000000" });
+    expect(intent.summary).toMatch(/^Send 100 XRP to /);
+    expect(intent.fields.filter((f) => f.label === "Amount").map((f) => f.value)).toEqual(["100 XRP"]);
+  });
+
+  it("still catches a malformed partial XRP payment", () => {
+    const codes = explain({
+      TransactionType: "Payment",
+      Account: ACCOUNT_ZERO,
+      Destination: ACCOUNT_ONE,
+      DeliverMax: "1000000000",
+      Flags: 0x00020000,
+    }).warnings.map((w) => w.code);
+    expect(codes).toEqual(["PARTIAL_PAYMENT", "MALFORMED_PARTIAL_XRP"]);
+  });
+});
+
 describe("explain: partial payment", () => {
   it("flags tfPartialPayment and the XRP→XRP malformation", () => {
     const intent = explain({

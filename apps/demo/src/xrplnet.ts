@@ -93,6 +93,30 @@ export async function fundFromFaucet(url: string, address: string): Promise<numb
   throw new Error("Faucet funding did not land in time");
 }
 
+export interface LedgerTx {
+  hash: string;
+  /** ISO close time, when the server reports it */
+  date?: string;
+  /** Final result from the transaction metadata, e.g. tesSUCCESS */
+  result?: string;
+  tx: Record<string, any>;
+}
+
+/** An account's most recent validated transactions (account_tx), newest first. */
+export async function accountHistory(url: string, address: string, limit = 25): Promise<LedgerTx[]> {
+  const c = await connected(url);
+  const res: any = await c.request({ command: "account_tx", account: address, limit, forward: false } as any);
+  return (res.result?.transactions ?? []).map((t: any) => {
+    const tx = t.tx_json ?? t.tx ?? {}; // API v2 vs v1 shape
+    return {
+      hash: t.hash ?? tx.hash ?? "",
+      date: t.close_time_iso,
+      result: typeof t.meta === "object" ? t.meta?.TransactionResult : undefined,
+      tx,
+    };
+  });
+}
+
 let simAccount: Promise<string> | undefined;
 
 /**

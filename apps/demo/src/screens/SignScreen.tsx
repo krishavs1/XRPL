@@ -19,10 +19,12 @@ interface Props {
   onAddress?: (address: string) => void;
   /** One-line status for the sidebar */
   onStatus?: (status: string) => void;
+  /** Called with the ledger result once a signed transaction is submitted */
+  onSigned?: (r: { hash: string; result: string }) => void;
 }
 
 /** Step 4: today's Ledger screen next to the clear-signing device profile, then sign. */
-export function SignScreen({ intent, endpoint, onPrepared, onAddress, onStatus }: Props) {
+export function SignScreen({ intent, endpoint, onPrepared, onAddress, onStatus, onSigned }: Props) {
   const [transport, setTransport] = useState<TransportChoice>("speculos");
   const [signer, setSigner] = useState<SignerXrp | null>(null);
   const [address, setAddress] = useState("");
@@ -91,6 +93,7 @@ export function SignScreen({ intent, endpoint, onPrepared, onAddress, onStatus }
       setStage("signed");
       const res = await submitSigned(endpoint, prepared, sig);
       setResult(res);
+      onSigned?.(res);
       setStage("submitted");
     } catch (e) {
       setError((e as Error).message ?? String(e));
