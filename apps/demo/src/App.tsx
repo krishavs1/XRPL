@@ -48,6 +48,7 @@ export function App() {
   const [simBusy, setSimBusy] = useState(false);
   const [simAs, setSimAs] = useState("");
   const [deviceAccount, setDeviceAccount] = useState("");
+  const [selectedFixture, setSelectedFixture] = useState("");
 
   const result = useMemo(() => {
     try {
@@ -106,16 +107,17 @@ export function App() {
         <section className="pane left">
           <div className="toolbar">
             <select
-              value=""
+              value={selectedFixture}
               onChange={(e) => {
                 const s = samples.find((x) => x.name === e.target.value);
                 if (s) {
                   setInput(JSON.stringify(s.tx, null, 2));
                   setSim(null);
+                  setSelectedFixture(s.name);
                 }
               }}
             >
-              <option value="" disabled>
+              <option value="">
                 Load fixture…
               </option>
               {samples.map((s) => (
@@ -127,7 +129,10 @@ export function App() {
           </div>
           <textarea
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              setSelectedFixture("");
+            }}
             spellCheck={false}
             aria-label="Transaction JSON or signing blob hex"
           />
@@ -147,6 +152,7 @@ export function App() {
             onPick={(tx) => {
               setInput(JSON.stringify(tx, null, 2));
               setSim(null);
+              setSelectedFixture("");
             }}
           />
         </section>
