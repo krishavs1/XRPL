@@ -88,8 +88,14 @@ let simAccount: Promise<string> | undefined;
  * `simulate` needs an existing source account but no signature, so a fresh
  * faucet address (no key kept) is enough. Created once per page load.
  */
+// Pre-funded, aged testnet account to simulate as (address only — simulate
+// needs no key). Aged matters: e.g. AccountDelete simulates tecTOO_SOON on an
+// account younger than ~256 ledgers. Faucet throwaway stays as the fallback.
+const DEMO_SIM_ACCOUNT = "rJnHWdT8XysFvZdJUziqmAQjrDraivV8Po";
+
 export function simulationAccount(url: string): Promise<string> {
   simAccount ??= (async () => {
+    if ((await getBalanceOrNull(url, DEMO_SIM_ACCOUNT)) !== null) return DEMO_SIM_ACCOUNT;
     const address = Wallet.generate().address;
     await fundFromFaucet(url, address);
     return address;

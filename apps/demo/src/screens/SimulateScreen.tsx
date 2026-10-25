@@ -92,7 +92,7 @@ export function SimulateScreen({ intent, endpoint, deviceAccount, sim, onResult 
           {testnetNote && <p className="note">{testnetNote}</p>}
           {as && (
             <p className="note">
-              Simulated as {as.throwaway ? "a throwaway testnet account" : "the connected device account"} {as.address}.
+              Simulated as {as.throwaway ? "a demo testnet account" : "the connected device account"} {as.address}.
             </p>
           )}
           {sim.balanceChanges && sim.balanceChanges.length > 0 && (
