@@ -1,54 +1,74 @@
-import { useMemo, useState } from "react";
-import { encode } from "xrpl";
-import { explain, type DisplayIntent, type SimulationResult } from "xrpl-clear-signing";
-import { DEFAULT_WSS, simulateViaWs } from "./xrplnet";
-import { samples, PLACEHOLDER_ACCOUNT } from "./samples";
-import { LedgerPanel } from "./LedgerPanel";
-import { FeedPanel } from "./FeedPanel";
+import { useEffect, useMemo, useState } from "react";
+import { explain, type SimulationResult } from "xrpl-clear-signing";
+import { DEFAULT_WSS } from "./xrplnet";
+import { samples } from "./samples";
+import { Nav, type NavStep } from "./Nav";
+import { Settings } from "./Settings";
+import { ChooseScreen } from "./screens/ChooseScreen";
+import { ReviewScreen } from "./screens/ReviewScreen";
+import { SimulateScreen } from "./screens/SimulateScreen";
+import { SignScreen } from "./screens/SignScreen";
 
-function IntentView({ intent, nested = false }: { intent: DisplayIntent; nested?: boolean }) {
-  return (
-    <div className={nested ? "inner" : undefined}>
-      {!nested &&
-        intent.warnings.map((w, i) => (
-          <div key={i} className={`band ${w.severity}`}>
-            <code>{w.code}</code> {w.message}
-          </div>
-        ))}
-      <p className="intent-title">
-        {intent.title}
-        <span className="txtype">{intent.txType}</span>
-      </p>
-      <p className="intent-summary">{intent.summary}</p>
-      {nested &&
-        intent.warnings.map((w, i) => (
-          <div key={i} className={`band ${w.severity}`}>
-            <code>{w.code}</code> {w.message}
-          </div>
-        ))}
-      <div className="rows">
-        {intent.fields.map((f, i) => (
-          <div key={i} className={`rowline${f.risk ? ` ${f.risk}` : ""}`}>
-            <span className="k">{f.label}</span>
-            <span className="v">{f.value}</span>
-          </div>
-        ))}
-      </div>
-      {intent.inner?.map((inner, i) => (
-        <IntentView key={i} intent={inner} nested />
-      ))}
-    </div>
-  );
+const STEPS = ["choose", "review", "simulate", "sign"] as const;
+type Step = (typeof STEPS)[number];
+const LABELS: Record<Step, string> = { choose: "Choose", review: "Review", simulate: "Simulate", sign: "Sign" };
+
+/** The current step lives in the URL hash, so a refresh mid-demo keeps your place. */
+function useStep(): [Step, (s: Step) => void] {
+  const read = (): Step => {
+    const h = window.location.hash.replace(/^#\/?/, "") as Step;
+    return STEPS.includes(h) ? h : "choose";
+  };
+  const [step, setStep] = useState<Step>(read);
+  useEffect(() => {
+    const onHash = () => setStep(read());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  const go = (s: Step) => {
+    window.location.hash = `/${s}`;
+    window.scrollTo(0, 0);
+  };
+  return [step, go];
+}
+
+/** sessionStorage can throw (private mode, blocked storage); the demo works without it. */
+function load(key: string): string | null {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+function save(key: string, value: string) {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {}
+}
+
+export interface Source {
+  /** Scenario id, or "paste" / "feed" */
+  id: string;
+  label: string;
 }
 
 export function App() {
-  const [input, setInput] = useState(JSON.stringify(samples[0].tx, null, 2));
+  const [step, go] = useStep();
+  const [input, setInput] = useState(() => load("cs.input") ?? JSON.stringify(samples[0].tx, null, 2));
+  const [source, setSource] = useState<Source>(() => {
+    try {
+      return JSON.parse(load("cs.source") ?? "") as Source;
+    } catch {
+      return { id: samples[0].id, label: samples[0].title };
+    }
+  });
   const [endpoint, setEndpoint] = useState(DEFAULT_WSS);
   const [sim, setSim] = useState<SimulationResult | null>(null);
-  const [simBusy, setSimBusy] = useState(false);
-  const [simAs, setSimAs] = useState("");
   const [deviceAccount, setDeviceAccount] = useState("");
-  const [selectedFixture, setSelectedFixture] = useState("");
+  const [signStatus, setSignStatus] = useState("not connected");
+
+  useEffect(() => save("cs.input", input), [input]);
+  useEffect(() => save("cs.source", JSON.stringify(source)), [source]);
 
   const result = useMemo(() => {
     try {
@@ -57,36 +77,34 @@ export function App() {
       return { intent: null, error: (e as Error).message };
     }
   }, [input]);
+  const intent = result.intent;
 
-  const inputIsHex = !input.trim().startsWith("{");
-  const hex = useMemo(() => {
-    if (!result.intent) return null;
-    if (inputIsHex) return input.trim();
-    try {
-      return encode(result.intent.raw as any);
-    } catch {
-      return null; // partial tx (missing required fields) — fine before autofill
-    }
-  }, [result.intent, input, inputIsHex]);
-
-  async function runSimulation() {
-    if (!result.intent) return;
-    setSimBusy(true);
+  function pick(tx: Record<string, unknown> | string, src: Source) {
+    setInput(typeof tx === "string" ? tx : JSON.stringify(tx, null, 2));
+    setSource(src);
     setSim(null);
-    setSimAs("");
-    try {
-      const tx = { ...(result.intent.raw as Record<string, unknown>) };
-      if (deviceAccount && tx.Account === PLACEHOLDER_ACCOUNT) {
-        tx.Account = deviceAccount;
-        setSimAs(deviceAccount);
-      }
-      setSim(await simulateViaWs(endpoint, tx));
-    } catch (e) {
-      setSim({ engineResult: "request failed", message: (e as Error).message, raw: {} });
-    } finally {
-      setSimBusy(false);
-    }
+    go("review");
   }
+
+  const dangers = intent?.warnings.filter((w) => w.severity === "danger").length ?? 0;
+  const warns = intent?.warnings.filter((w) => w.severity === "warn").length ?? 0;
+  const status: Record<Step, Pick<NavStep, "status" | "tone">> = {
+    choose: { status: source.label },
+    review: !intent
+      ? { status: "nothing to review" }
+      : dangers
+        ? { status: `${dangers} danger${warns ? ` · ${warns} warning${warns > 1 ? "s" : ""}` : ""}`, tone: "danger" }
+        : warns
+          ? { status: `${warns} warning${warns > 1 ? "s" : ""}`, tone: "warn" }
+          : { status: "no warnings", tone: "ok" },
+    simulate: sim ? { status: sim.engineResult, tone: sim.engineResult === "tesSUCCESS" ? "ok" : "danger" } : { status: "not run" },
+    sign: { status: signStatus },
+  };
+  const navSteps: NavStep[] = STEPS.map((s) => ({ id: s, label: LABELS[s], ...status[s] }));
+
+  const i = STEPS.indexOf(step);
+  const prev = STEPS[i - 1];
+  const next = STEPS[i + 1];
 
   return (
     <>
@@ -101,107 +119,46 @@ export function App() {
           </svg>
           <h1>XRPL Clear Signing</h1>
         </div>
-        <span className="meta">Transaction display metadata for XRPL · draft spec + reference parser · testnet</span>
+        <Settings endpoint={endpoint} onChange={setEndpoint} />
       </header>
-      <main>
-        <section className="pane left">
-          <div className="toolbar">
-            <select
-              value={selectedFixture}
-              onChange={(e) => {
-                const s = samples.find((x) => x.name === e.target.value);
-                if (s) {
-                  setInput(JSON.stringify(s.tx, null, 2));
-                  setSim(null);
-                  setSelectedFixture(s.name);
-                }
-              }}
-            >
-              <option value="">
-                Load fixture…
-              </option>
-              {samples.map((s) => (
-                <option key={s.name} value={s.name}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+      <div className="shell">
+        <Nav steps={navSteps} current={step} onGo={(s) => go(s as Step)} />
+        <main className="content">
+          {/* Every screen stays mounted so the device connection and feed survive navigation. */}
+          <div hidden={step !== "choose"}>
+            <ChooseScreen source={source} input={input} endpoint={endpoint} onPick={pick} />
           </div>
-          <textarea
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              setSelectedFixture("");
-            }}
-            spellCheck={false}
-            aria-label="Transaction JSON or signing blob hex"
-          />
-          <p className="input-meta">
-            {inputIsHex
-              ? `input: signing blob · ${Math.floor(input.trim().length / 2)} bytes`
-              : `input: tx JSON${hex ? ` · serializes to ${hex.length / 2} bytes` : " · not yet serializable (pre-autofill)"}`}
-          </p>
-          {hex && !inputIsHex && (
-            <details className="hexview">
-              <summary>serialized hex</summary>
-              <pre>{hex}</pre>
-            </details>
-          )}
-          <FeedPanel
-            endpoint={endpoint}
-            onPick={(tx) => {
-              setInput(JSON.stringify(tx, null, 2));
-              setSim(null);
-              setSelectedFixture("");
-            }}
-          />
-        </section>
-        <section className="pane">
-          {result.error && <div className="error-inline">cannot parse input: {result.error}</div>}
-          {result.intent && <IntentView intent={result.intent} />}
-
-          <div className="section">
-            <h2>Dry run — simulate (XLS-69)</h2>
-            <div className="controls">
-              <input
-                value={endpoint}
-                onChange={(e) => setEndpoint(e.target.value)}
-                aria-label="JSON-RPC endpoint"
-              />
-              <button onClick={runSimulation} disabled={simBusy || !result.intent}>
-                {simBusy ? "simulating…" : "simulate"}
+          <div hidden={step !== "review"}>
+            <ReviewScreen intent={intent} error={result.error} input={input} />
+          </div>
+          <div hidden={step !== "simulate"}>
+            <SimulateScreen
+              intent={intent}
+              endpoint={endpoint}
+              deviceAccount={deviceAccount}
+              sim={sim}
+              onResult={setSim}
+            />
+          </div>
+          <div hidden={step !== "sign"}>
+            <SignScreen
+              intent={intent}
+              endpoint={endpoint}
+              onPrepared={(tx) => setInput(JSON.stringify(tx, null, 2))}
+              onAddress={setDeviceAccount}
+              onStatus={setSignStatus}
+            />
+          </div>
+          <footer className="step-footer">
+            {prev ? <button onClick={() => go(prev)}>← {LABELS[prev]}</button> : <span />}
+            {next && (
+              <button className="accent" onClick={() => go(next)} disabled={!intent}>
+                {LABELS[next]} →
               </button>
-            </div>
-            {sim && (
-              <div className="simresult">
-                {simAs && <div>simulated as connected device account {simAs}</div>}
-                {sim.engineResult === "srcActNotFound" && !simAs && (
-                  <div>fixture uses a placeholder account — connect a device below to simulate as a funded account</div>
-                )}
-                <span className={sim.engineResult === "tesSUCCESS" ? "ok" : "bad"}>
-                  {sim.engineResult}
-                </span>
-                {sim.message ? ` — ${sim.message}` : ""}
-                {sim.balanceChanges?.map((bc) => (
-                  <div key={bc.account}>
-                    {bc.account}:{" "}
-                    {bc.balances
-                      .map((b) => `${Number(b.value) >= 0 ? "+" : ""}${b.value} ${b.currency}`)
-                      .join(", ")}
-                  </div>
-                ))}
-              </div>
             )}
-          </div>
-
-          <LedgerPanel
-            tx={(result.intent?.raw as Record<string, unknown>) ?? null}
-            intent={result.intent}
-            onPrepared={(tx) => setInput(JSON.stringify(tx, null, 2))}
-            onAddress={setDeviceAccount}
-          />
-        </section>
-      </main>
+          </footer>
+        </main>
+      </div>
     </>
   );
 }

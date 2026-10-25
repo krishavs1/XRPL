@@ -59,10 +59,9 @@ export function FeedPanel({ endpoint, onPick }: Props) {
   }, [running, endpoint]);
 
   return (
-    <div className="section">
-      <h2>Live ledger feed</h2>
+    <div>
       <div className="controls">
-        <button onClick={() => setRunning((r) => !r)}>{running ? "stop" : "stream validated transactions"}</button>
+        <button onClick={() => setRunning((r) => !r)}>{running ? "Stop" : "Stream validated transactions"}</button>
         <span className="statusline" style={{ margin: 0 }}>
           {running ? `streaming via ${endpoint.replace(/^wss:\/\//, "")} — click a row to decode it` : ""}
         </span>

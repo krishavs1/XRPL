@@ -10,9 +10,19 @@ const DEMO_RLUSD_ISSUER = "rFKWLRVzHatrpvFEvYv5xxVLsvuoXZppu"; // in the registr
 export const PLACEHOLDER_ACCOUNT = "rrrrrrrrrrrrrrrrrrrrrhoLvTp";
 const SOME_ACCOUNT = PLACEHOLDER_ACCOUNT;
 
-export const samples: { name: string; tx: Record<string, unknown> }[] = [
+export interface Sample {
+  id: string;
+  title: string;
+  /** One line for the scenario card */
+  blurb: string;
+  tx: Record<string, unknown>;
+}
+
+export const samples: Sample[] = [
   {
-    name: "Scam trustline — impersonated RLUSD, unlimited limit",
+    id: "scam-trustline",
+    title: "Fake RLUSD trustline",
+    blurb: "Trusts an \"RLUSD\" token from an impostor issuer, with an effectively unlimited limit.",
     tx: {
       TransactionType: "TrustSet",
       Account: SOME_ACCOUNT,
@@ -21,7 +31,9 @@ export const samples: { name: string; tx: Record<string, unknown> }[] = [
     },
   },
   {
-    name: "Legit RLUSD trustline",
+    id: "real-trustline",
+    title: "Real RLUSD trustline",
+    blurb: "Trusts RLUSD from its verified issuer, with a normal limit.",
     tx: {
       TransactionType: "TrustSet",
       Account: SOME_ACCOUNT,
@@ -30,16 +42,21 @@ export const samples: { name: string; tx: Record<string, unknown> }[] = [
     },
   },
   {
-    name: "XRP payment — 15 XRP (clean, device-signable)",
+    id: "xrp-payment",
+    title: "Send 15 XRP",
+    blurb: "A plain payment to an exchange, with the destination tag it requires.",
     tx: {
       TransactionType: "Payment",
       Account: SOME_ACCOUNT,
       Destination: "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B",
+      DestinationTag: 12345,
       Amount: "15000000",
     },
   },
   {
-    name: "Partial payment (cross-currency) to an exchange, no destination tag",
+    id: "partial-payment",
+    title: "Partial payment",
+    blurb: "The recipient may get far less than the stated amount, and the exchange tag is missing.",
     tx: {
       TransactionType: "Payment",
       Account: SOME_ACCOUNT,
@@ -50,7 +67,9 @@ export const samples: { name: string; tx: Record<string, unknown> }[] = [
     },
   },
   {
-    name: "Malformed — partial XRP-to-XRP payment (temBAD_SEND_XRP_PARTIAL)",
+    id: "malformed-payment",
+    title: "Malformed payment",
+    blurb: "An XRP-to-XRP partial payment: the ledger rejects it, but a device would still sign it.",
     tx: {
       TransactionType: "Payment",
       Account: SOME_ACCOUNT,
@@ -60,7 +79,9 @@ export const samples: { name: string; tx: Record<string, unknown> }[] = [
     },
   },
   {
-    name: "DEX offer — sell 500 XRP for 1,250 RLUSD",
+    id: "dex-offer",
+    title: "DEX offer",
+    blurb: "Sell 500 XRP for 1,250 RLUSD on the built-in exchange.",
     tx: {
       TransactionType: "OfferCreate",
       Account: SOME_ACCOUNT,
@@ -70,7 +91,9 @@ export const samples: { name: string; tx: Record<string, unknown> }[] = [
     },
   },
   {
-    name: "AMM deposit — single-sided 100 XRP into XRP/RLUSD, no bound",
+    id: "amm-deposit",
+    title: "AMM deposit",
+    blurb: "A single-sided 100 XRP deposit into an XRP/RLUSD pool, with no price bound.",
     tx: {
       TransactionType: "AMMDeposit",
       Account: SOME_ACCOUNT,
@@ -81,7 +104,9 @@ export const samples: { name: string; tx: Record<string, unknown> }[] = [
     },
   },
   {
-    name: "Account takeover — SetRegularKey to an unknown key",
+    id: "regular-key",
+    title: "Account takeover",
+    blurb: "Gives an unknown key full signing power over your account.",
     tx: {
       TransactionType: "SetRegularKey",
       Account: SOME_ACCOUNT,
@@ -89,7 +114,9 @@ export const samples: { name: string; tx: Record<string, unknown> }[] = [
     },
   },
   {
-    name: "Account drain — AccountDelete to an unknown account",
+    id: "account-delete",
+    title: "Account drain",
+    blurb: "Deletes your account and sends all of its XRP to an unknown address.",
     tx: {
       TransactionType: "AccountDelete",
       Account: SOME_ACCOUNT,
@@ -97,7 +124,9 @@ export const samples: { name: string; tx: Record<string, unknown> }[] = [
     },
   },
   {
-    name: "Batch — 2 inner transactions hidden behind one approval",
+    id: "batch",
+    title: "Batch: hidden transactions",
+    blurb: "One signature, two inner transactions: a partial payment and a fake RLUSD trustline.",
     tx: {
       TransactionType: "Batch",
       Account: SOME_ACCOUNT,
