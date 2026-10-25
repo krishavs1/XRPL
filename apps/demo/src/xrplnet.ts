@@ -1,4 +1,4 @@
-import { Client, encode, getBalanceChanges } from "xrpl";
+import { Client, Wallet, encode, getBalanceChanges } from "xrpl";
 import type { SimulationResult } from "xrpl-clear-signing";
 
 // Set VITE_XRPL_WSS in apps/demo/.env.local (gitignored — endpoint tokens stay
@@ -79,6 +79,23 @@ export async function fundFromFaucet(url: string, address: string): Promise<numb
     if (b !== null) return b;
   }
   throw new Error("Faucet funding did not land in time");
+}
+
+let simAccount: Promise<string> | undefined;
+
+/**
+ * A funded testnet account to simulate as when no device is connected:
+ * `simulate` needs an existing source account but no signature, so a fresh
+ * faucet address (no key kept) is enough. Created once per page load.
+ */
+export function simulationAccount(url: string): Promise<string> {
+  simAccount ??= (async () => {
+    const address = Wallet.generate().address;
+    await fundFromFaucet(url, address);
+    return address;
+  })();
+  simAccount.catch(() => (simAccount = undefined)); // let a failed faucet call be retried
+  return simAccount;
 }
 
 /** Fill in Account/SigningPubKey/Fee/Sequence so the device signs exactly what we preview. */
