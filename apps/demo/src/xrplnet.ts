@@ -1,7 +1,11 @@
 import { Client, encode, getBalanceChanges } from "xrpl";
 import type { SimulationResult } from "xrpl-clear-signing";
 
-export const DEFAULT_WSS = "wss://s.altnet.rippletest.net:51233";
+// Set VITE_XRPL_WSS in apps/demo/.env.local (gitignored — endpoint tokens stay
+// out of the repo) to default every network call to that node, e.g. QuickNode.
+export const DEFAULT_WSS =
+  ((import.meta as any).env?.VITE_XRPL_WSS as string | undefined) ??
+  "wss://s.altnet.rippletest.net:51233";
 const FAUCET_URL = "https://faucet.altnet.rippletest.net/accounts";
 
 let client: Client | undefined;
