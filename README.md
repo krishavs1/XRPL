@@ -1,56 +1,77 @@
 # Clear
 
 **Stop blind-signing on the XRP Ledger.** A display-metadata standard
-(ERC-7730-style, for XRPL) plus a reference TypeScript parser that turns any
-XRPL transaction - JSON or raw signing blob - into human-readable,
-risk-annotated intent. Enriched with live `simulate` dry runs (XLS-69) and
-rendered against a Ledger device.
+(ERC-7730-style, for XRPL) and a reference parser that turn any XRPL
+transaction, JSON or a raw signing blob, into human-readable, risk-annotated
+intent. Enriched with live `simulate` dry runs (XLS-69) over a QuickNode
+endpoint, and rendered from the wallet down to a Ledger device's secure screen.
 
-Built at the AI & Fintech XRP Ledger Hackathon, NYC (Oct 24–25, 2026).
+Built at the AI & Fintech XRP Ledger Hackathon, NYC (October 2026).
 
 ## The problem
 
-Every XRPL wallet hand-rolls its own transaction rendering; hardware devices
-show raw fields at best, and newer transaction types fall back to blind
-signing. Nothing warns you that a TrustSet named "RLUSD" points at a scam
-issuer, that a Payment has the partial-payment flag set (so the stated amount
-isn't what arrives), or that one Batch signature (XLS-56) executes several
-hidden transactions. Ethereum answered this with ERC-7730; XRPL has no
-equivalent.
+When you sign a transaction on XRPL you are approving data you cannot read:
+raw hex, or cryptic field names. Every wallet renders transactions its own way,
+and on a hardware device most of that falls apart into raw fields or blind
+signing. Nothing warns you that a TrustSet names a token after a real asset but
+points at a scam issuer, that a SetRegularKey hands your signing keys to an
+attacker, that a Payment's stated amount is not what will arrive, or that one
+Batch signature hides several transactions.
+
+Ethereum answered this with ERC-7730: display metadata, reviewed into a
+registry, consumed by wallets and by Ledger devices so the secure screen shows
+human-readable intent. XRPL had no equivalent, even though it is an easier
+problem: a fixed, known set of transaction types instead of arbitrary contract
+calldata. This is that standard.
 
 ## What this is
 
-1. **`spec/transaction-display-metadata.md`** - a draft standard: the display
-   metadata format, an account registry with impersonation detection,
-   standardized risk codes, Batch recursion rules, and a device rendering
-   profile. `spec/DISCUSSION-POST.md` is the pre-proposal write-up for
-   XRPL-Standards.
-2. **`packages/core`** (`xrpl-clear`) - the reference parser:
-   `explain(blobOrJson) → DisplayIntent` for TrustSet, SetRegularKey,
-   SignerListSet, AccountSet and AccountDelete (JSON metadata documents) and
-   Payment, OfferCreate, EscrowCreate, AMMDeposit and Batch (TypeScript
-   renderers), plus a safe fallback for every other type, and `simulateTx()`
-   for XLS-69 dry-run enrichment.
-3. **`apps/demo`** - a web tool: paste hex or JSON, see the decoded intent and
-   risk warnings, simulate against the network, stream live ledger
-   transactions, and sign on a Ledger (Speculos emulator or a real device).
-4. **`harness/`** - standalone Ledger signing scripts: `sign-dmk.ts` (the
-   pre-release `device-signer-kit-xrp`) and `sign-hw-app.ts` (the stable
-   `hw-app-xrp` fallback).
+1. **A standard** (`spec/transaction-display-metadata.md`). A JSON display
+   metadata format, one document per transaction type, plus an account registry
+   with impersonation detection, standardized risk codes, Batch recursion
+   rules, and a device rendering profile. `spec/DISCUSSION-POST.md` is the
+   pre-proposal write-up for XRPL-Standards.
+2. **A reference parser** (`packages/core`, published as `xrpl-clear`).
+   `explain(blobOrJson)` returns a structured, risk-annotated `DisplayIntent`.
+   Nine transaction types render entirely from JSON metadata documents
+   (TrustSet, Payment, OfferCreate, EscrowCreate, AMMDeposit, SetRegularKey,
+   SignerListSet, AccountSet, AccountDelete). Batch is the one hand-written
+   renderer, because the spec defines it as a composition rule that recurses
+   inner transactions. Unknown types fall back to a safe raw render. The parser
+   is an interpreter for the standard: adding a type is a JSON file, not code.
+3. **A web tool** (`apps/demo`). Paste hex or JSON, pick a scenario, or pull a
+   live transaction off the ledger. See the decoded intent and risk warnings,
+   run an XLS-69 `simulate` dry run, stream validated transactions in real time,
+   and sign on a Ledger (Speculos emulator or a real device). Every live call
+   runs on a QuickNode XRPL endpoint.
+4. **A firmware proof of concept** (`firmware/`). A fork of
+   [LedgerHQ/app-xrp](https://github.com/LedgerHQ/app-xrp) that renders the
+   warning on the device's own secure screen, proving the rendering belongs on
+   hardware. Demoed on Speculos, since shipping to physical devices requires
+   Ledger's review and signature.
+
+## How it works
+
+The heavy, data-dependent work runs on the host; the device only has to be
+trusted. The host resolves the display metadata and the account registry, runs
+the live `simulate` check through a node (QuickNode), and produces the preview.
+In the full architecture the device then verifies a signed descriptor and
+renders it on the secure screen, which is exactly how Ledger's ERC-7730 flow
+works on Ethereum. The Secure Element has no network, no filesystem, and
+kilobytes of RAM, so the registry and the interpreter are host-side by design;
+only verify-and-render belongs on the device.
 
 ## What's live vs. static
 
 Being explicit, because it matters for a security tool:
 
-- **Static:** the account registry (`packages/core/registry/issuers.json`, a
-  small hand-maintained JSON file). Issuer names and the "verified" marks come
-  from it, not from the ledger. The UI shows "unknown account" when an address
-  isn't in it.
-- **Live:** `simulate` dry runs, account balances, the faucet, the transaction
-  feed, and signing/submission all hit a real XRPL endpoint (public testnet by
-  default; point it at QuickNode via the endpoint fields).
-- **Testnet:** everything here runs on testnet. The demo fixtures use
-  throwaway testnet issuer accounts, not mainnet RLUSD.
+- **Static:** the account registry (`packages/core/registry/issuers.json`), a
+  curated JSON file. Issuer names and the verified marks come from it, not from
+  the ledger; the UI shows "unknown account" for anything not in it.
+- **Live, on QuickNode:** `simulate` dry runs, account balances, submission,
+  and the real-time transaction feed all run through a QuickNode XRPL endpoint.
+- **Testnet:** everything runs on testnet, with throwaway testnet issuer
+  accounts in the demo fixtures.
 
 ## Quickstart
 
@@ -60,95 +81,41 @@ npm test        # core library tests
 npm run demo    # web demo at http://localhost:5173
 ```
 
-For the Ledger flow, start the Speculos emulator first (see
-`harness/README.md`), then either use the "sign on device" button in the demo
-or run `npx tsx harness/sign-dmk.ts`.
+Point the demo at your own node by setting `VITE_XRPL_WSS` in
+`apps/demo/.env.local`; it falls back to the public testnet endpoint. For the
+Ledger flow, start the Speculos emulator (see `harness/README.md`), then use the
+"sign on device" button in the demo or run `npx tsx harness/sign-dmk.ts`.
 
-> **Emulator note:** Speculos serves one client at a time. Don't run the
-> harness and the browser demo (or two browser tabs) against it at once - a
-> concurrent APDU exchange surfaces as a generic "Unexpected device exchange
-> error". Use one client; after any device error, reload the tab.
+To render the firmware warning on the device yourself, apply
+`firmware/clear-signing-warning.patch` to `LedgerHQ/app-xrp` and build it; see
+`firmware/README.md`.
 
-## Demo script (90s)
+> **Emulator note:** Speculos serves one client at a time. Do not run the
+> harness and the browser demo (or two browser tabs) against it at once; a
+> concurrent exchange surfaces as a generic "Unexpected device exchange error".
+> Use one client, and reload the tab after any device error.
 
-1. Load the scam TrustSet fixture → the preview flags unverified issuer,
-   effectively-unlimited limit, and **"RLUSD" impersonation**.
-2. Hit **simulate** → the ledger returns `tesSUCCESS`: a scam trustline is a
-   perfectly valid transaction. Neither the ledger nor the device can see the
-   scam - only the metadata layer does.
-3. Load the legit RLUSD TrustSet → clean preview, verified issuer ✓.
-4. Load the Batch → one signature, two inner transactions unfolded, their
-   warnings bubbled up.
-5. Sign on the Ledger → the scam's sign button stays locked until you
-   acknowledge its danger warnings. Side by side: today's Ledger XRP app shows
-   raw fields that look identical for the scam and the real issuer; the
-   clear-signing device preview leads with "⚠ CURRENCY_IMPERSONATION" and ends
-   with "Reject recommended". It settles on testnet.
+## Demo
 
-## Layout
+1. Load the **Account takeover** scenario. The preview flags it in red: this
+   hands an unknown key permanent signing control of the account.
+2. Hit **simulate**. The ledger returns `tesSUCCESS`: this is a perfectly valid
+   transaction. The ledger will not stop you, and the device will not either.
+   Only the standard catches it.
+3. Compare the devices. Today's Ledger XRP app shows raw fields. The
+   clear-signing device profile leads with the warning and ends with "Reject
+   recommended," and the sign button stays locked until the danger warnings are
+   acknowledged.
+4. Try a Batch off the live feed: one signature, its inner transactions
+   unfolded, each risk-checked and its warnings bubbled up.
+
+## Repository layout
 
 ```
-packages/core   the xrpl-clear library (parser, registry, simulate)
+spec            the display-metadata standard and the XRPL-Standards post
+packages/core   the xrpl-clear library (parser, metadata interpreter, registry, simulate, device profile)
 apps/demo       the web tool
 harness         standalone Ledger signing scripts
-spec            the draft standard + the XRPL-Standards discussion post
-FEEDBACK.md     DX findings on the pre-release Ledger kit
-PITCH.md        pitch notes and prize-track mapping
+firmware        the app-xrp fork that renders the warning on real firmware
+FEEDBACK.md     DX findings on the pre-release Ledger device-signer-kit-xrp
 ```
-
-## Status
-
-- [x] Parser: 10 transaction types (5 via JSON metadata documents) + safe fallback
-- [x] Risk warnings incl. impersonation, partial-payment, Batch, AMM deposit risks
-- [x] `simulate` (XLS-69) dry runs with projected balance changes
-- [x] Live ledger transaction feed (WebSocket `subscribe`)
-- [x] Device signing end-to-end via `device-signer-kit-xrp` on Speculos
-- [x] Draft spec + XRPL-Standards discussion post written
-- [ ] Post the spec to XRPL-Standards Discussions and link it here
-- [ ] Swap in the event's testnet RLUSD issuer (booth) + run on a real device
-- [ ] Point the demo at a QuickNode endpoint for the live feed + simulate
-- [ ] File the `FEEDBACK.md` findings as issues on `LedgerHQ/device-sdk-ts`
-- [ ] Record a fallback demo video
-
-### Spec vs. implementation gaps
-
-- [x] JSON metadata documents: TrustSet, SetRegularKey, SignerListSet,
-      AccountSet and AccountDelete render from `packages/core/metadata/*.json`
-      via the interpreter in `src/metadata.ts`; callers can add types with
-      `explain(tx, { metadata })`.
-- [ ] Move Payment, OfferCreate, EscrowCreate and AMMDeposit to metadata
-      documents (Batch stays code: it's a pipeline rule).
-- [x] Device profile: `toDeviceScreens()` in `packages/core/src/device.ts`
-      implements the spec's rules; the demo shows it next to the live
-      Speculos screen and gates signing on danger warnings.
-- [ ] On-device clear signing: the Ledger XRP app (C firmware) still renders
-      raw fields. Port the device profile there, or propose it to Ledger.
-- [ ] Per-network registries: `issuers.json` is labelled mainnet but contains
-      the testnet RLUSD issuer, and `explain()` takes no network option. Split
-      the file and select by network.
-- [ ] Registry signing/pinning: the spec says "signed", the file is plain
-      JSON with no hash check.
-- [ ] Named flags for EscrowCreate and AMMDeposit (`flags` format).
-- [ ] Spec risk-code list is missing 7 codes the parser emits
-      (`MALFORMED_PARTIAL_XRP`, `ESCROW_NO_RELEASE_GATE`, `FILL_OR_KILL`,
-      `AMM_MODE_INVALID`, `SINGLE_SIDED_DEPOSIT`, `NO_DEPOSIT_BOUND`,
-      `POOL_SEEDING`).
-
-### Missing risk checks
-
-- [ ] Batch: flag inner transactions whose `Account` differs from the outer
-      signer (XLS-56 `BatchSigners`).
-- [ ] Payment: warn on unverified destinations and run currency
-      impersonation checks on issued `Amount` / `SendMax`.
-- [x] Account-takeover / drain types as metadata documents: `SetRegularKey`,
-      `SignerListSet`, `AccountSet`, `AccountDelete`.
-- [ ] Turn `simulate` results into risk codes (non-`tesSUCCESS` result,
-      large XRP balance drop).
-
-### Housekeeping
-
-- [ ] Fill in the empty sections of `FEEDBACK.md`.
-- [ ] Tests for OfferCreate, EscrowCreate, `MISSING_DESTINATION_TAG`,
-      `simulateTx`, and AMM LP currency decoding.
-- [ ] Remove the dated "tomorrow" / "booth" wording from the READMEs after the
-      event.
