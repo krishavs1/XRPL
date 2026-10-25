@@ -18,9 +18,11 @@ interface Props {
   tx: Record<string, unknown> | null;
   /** Called with the autofilled tx so the preview shows exactly what the device signs. */
   onPrepared: (tx: Record<string, unknown>) => void;
+  /** Called when a device connects, so the rest of the app can use its account. */
+  onAddress?: (address: string) => void;
 }
 
-export function LedgerPanel({ tx, onPrepared }: Props) {
+export function LedgerPanel({ tx, onPrepared, onAddress }: Props) {
   const [transport, setTransport] = useState<TransportChoice>("speculos");
   const [wss, setWss] = useState(DEFAULT_WSS);
   const [signer, setSigner] = useState<SignerXrp | null>(null);
@@ -49,6 +51,7 @@ export function LedgerPanel({ tx, onPrepared }: Props) {
       const addr = await getDeviceAddress(s);
       setAddress(addr.address);
       setPublicKey(addr.publicKey);
+      onAddress?.(addr.address);
       setBalance(await getBalanceOrNull(wss, addr.address));
     } catch (e) {
       setError((e as Error).message ?? String(e));

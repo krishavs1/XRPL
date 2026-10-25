@@ -4,7 +4,9 @@
 const RLUSD_HEX = "524C555344" + "0".repeat(30);
 const CANONICAL_RLUSD_ISSUER = "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De";
 const SCAM_ISSUER = "rrrrrrrrrrrrrrrrrrrrBZbvji";
-const SOME_ACCOUNT = "rrrrrrrrrrrrrrrrrrrrrhoLvTp";
+/** Placeholder source account in fixtures; the app substitutes the connected device account. */
+export const PLACEHOLDER_ACCOUNT = "rrrrrrrrrrrrrrrrrrrrrhoLvTp";
+const SOME_ACCOUNT = PLACEHOLDER_ACCOUNT;
 
 export const samples: { name: string; tx: Record<string, unknown> }[] = [
   {

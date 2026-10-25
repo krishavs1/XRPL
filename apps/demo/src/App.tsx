@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { encode } from "xrpl";
 import { explain, type DisplayIntent, type SimulationResult } from "xrpl-clear-signing";
 import { DEFAULT_WSS, simulateViaWs } from "./xrplnet";
-import { samples } from "./samples";
+import { samples, PLACEHOLDER_ACCOUNT } from "./samples";
 import { LedgerPanel } from "./LedgerPanel";
 
 function IntentView({ intent, nested = false }: { intent: DisplayIntent; nested?: boolean }) {
@@ -45,6 +45,8 @@ export function App() {
   const [endpoint, setEndpoint] = useState(DEFAULT_WSS);
   const [sim, setSim] = useState<SimulationResult | null>(null);
   const [simBusy, setSimBusy] = useState(false);
+  const [simAs, setSimAs] = useState("");
+  const [deviceAccount, setDeviceAccount] = useState("");
 
   const result = useMemo(() => {
     try {
@@ -69,8 +71,14 @@ export function App() {
     if (!result.intent) return;
     setSimBusy(true);
     setSim(null);
+    setSimAs("");
     try {
-      setSim(await simulateViaWs(endpoint, result.intent.raw as Record<string, unknown>));
+      const tx = { ...(result.intent.raw as Record<string, unknown>) };
+      if (deviceAccount && tx.Account === PLACEHOLDER_ACCOUNT) {
+        tx.Account = deviceAccount;
+        setSimAs(deviceAccount);
+      }
+      setSim(await simulateViaWs(endpoint, tx));
     } catch (e) {
       setSim({ engineResult: "request failed", message: (e as Error).message, raw: {} });
     } finally {
@@ -143,6 +151,10 @@ export function App() {
             </div>
             {sim && (
               <div className="simresult">
+                {simAs && <div>simulated as connected device account {simAs}</div>}
+                {sim.engineResult === "srcActNotFound" && !simAs && (
+                  <div>fixture uses a placeholder account — connect a device below to simulate as a funded account</div>
+                )}
                 <span className={sim.engineResult === "tesSUCCESS" ? "ok" : "bad"}>
                   {sim.engineResult}
                 </span>
@@ -162,6 +174,7 @@ export function App() {
           <LedgerPanel
             tx={(result.intent?.raw as Record<string, unknown>) ?? null}
             onPrepared={(tx) => setInput(JSON.stringify(tx, null, 2))}
+            onAddress={setDeviceAccount}
           />
         </section>
       </main>
