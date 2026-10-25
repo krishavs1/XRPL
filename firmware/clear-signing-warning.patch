@@ -1,0 +1,120 @@
+diff --git a/src/ui/transaction/review_menu_nbgl.c b/src/ui/transaction/review_menu_nbgl.c
+index aff565e..7fa27cb 100644
+--- a/src/ui/transaction/review_menu_nbgl.c
++++ b/src/ui/transaction/review_menu_nbgl.c
+@@ -15,8 +15,11 @@
+  *  limitations under the License.
+  ********************************************************************************/
+ #include <ux.h>
++#include <string.h>
+ 
+ #include "fmt.h"
++#include "fields.h"
++#include "xrp_helpers.h"
+ #include "idle_menu.h"
+ #include "nbgl_use_case.h"
+ #include "review_menu.h"
+@@ -24,6 +27,67 @@
+ 
+ #define MAX_FIELDS_PER_PAGE 8
+ 
++// --- Clear-signing warnings (XRPL display-metadata proof of concept) ---------
++// The stock app renders every transaction field but surfaces no risk judgment.
++// Here the device itself flags an unverified trustline issuer, the way a wallet
++// that consumed a clear-signing metadata registry would. The verified set is
++// baked in for the demo; a production app would pin a reviewed registry hash.
++#define TX_TYPE_TRUST_SET 20
++
++// Raw 20-byte account IDs (no base58/hashing needed at review time):
++// rFKWLRVzHatrpvFEvYv5xxVLsvuoXZppu (RLUSD demo issuer, testnet)
++// rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De (Ripple RLUSD)
++static const uint8_t VERIFIED_ISSUER_IDS[][XRP_ACCOUNT_SIZE] = {
++    {0x08, 0xf2, 0xff, 0x7f, 0xf0, 0x8c, 0x2f, 0x01, 0x4d, 0xa0,
++     0xf1, 0x5b, 0x1e, 0x33, 0x87, 0xff, 0x62, 0x93, 0xa1, 0x98},
++    {0xe5, 0xe9, 0x61, 0xc6, 0xa0, 0x25, 0xc9, 0x40, 0x4a, 0xa7,
++     0xb6, 0x62, 0xdd, 0x1d, 0xf9, 0x75, 0xbe, 0x75, 0xd1, 0x3e},
++};
++
++static uint8_t num_warnings;
++static const char *const WARNING_TITLE = "SECURITY WARNING";
++static const char *const WARNING_TEXT =
++    "Unverified issuer. Scam tokens impersonate real assets - verify the "
++    "issuer before trusting this line.";
++
++static bool is_verified_issuer(const uint8_t *account_id) {
++    for (size_t i = 0; i < sizeof(VERIFIED_ISSUER_IDS) / sizeof(VERIFIED_ISSUER_IDS[0]); i++) {
++        if (memcmp(account_id, VERIFIED_ISSUER_IDS[i], XRP_ACCOUNT_SIZE) == 0) {
++            return true;
++        }
++    }
++    return false;
++}
++
++static void detect_warnings(parseResult_t *tx) {
++    num_warnings = 0;
++
++    bool is_trust_set = false;
++    for (uint8_t i = 0; i < tx->num_fields; i++) {
++        field_t *f = &tx->fields[i];
++        if (f->data_type == STI_UINT16 && f->id == XRP_UINT16_TRANSACTION_TYPE &&
++            f->data.u16 == TX_TYPE_TRUST_SET) {
++            is_trust_set = true;
++            break;
++        }
++    }
++    if (!is_trust_set) {
++        return;
++    }
++
++    for (uint8_t i = 0; i < tx->num_fields; i++) {
++        field_t *f = &tx->fields[i];
++        if (f->data_type == STI_ACCOUNT && f->id == XRP_ACCOUNT_ISSUER &&
++            f->data.account != NULL) {
++            if (!is_verified_issuer(f->data.account->buf)) {
++                num_warnings = 1;
++            }
++            break;
++        }
++    }
++}
++// -----------------------------------------------------------------------------
++
+ // Globals
+ static field_value_t txFieldValueStrings[MAX_FIELDS_PER_PAGE];
+ static field_name_t txFieldNameStrings[MAX_FIELDS_PER_PAGE];
+@@ -48,6 +112,14 @@ static void build_title(const field_t* field, field_name_t* title) {
+ 
+ // function called by NBGL to get the pair indexed by "index"
+ static nbgl_layoutTagValue_t* getPair(uint8_t index) {
++    // Injected clear-signing warnings come first, before the transaction fields.
++    if (index < num_warnings) {
++        pair.item = WARNING_TITLE;
++        pair.value = WARNING_TEXT;
++        return &pair;
++    }
++    index -= num_warnings;
++
+     uint8_t arr_idx = index % MAX_FIELDS_PER_PAGE;
+     memset(&txFieldValueStrings[arr_idx], 0, sizeof(field_value_t));
+     memset(&txFieldNameStrings[arr_idx], 0, sizeof(field_name_t));
+@@ -76,6 +148,7 @@ void display_blind_signed_review(parseResult_t* transaction_param,
+                                  resultAction_t callback) {
+     transaction = transaction_param;
+     approval_menu_callback = callback;
++    num_warnings = 0;
+ 
+     memset(&txFieldValueStrings, 0, sizeof(txFieldValueStrings));
+     memset(&txFieldNameStrings, 0, sizeof(txFieldNameStrings));
+@@ -102,8 +175,11 @@ void display_review_menu(parseResult_t* transaction_param,
+     memset(&txFieldNameStrings, 0, sizeof(txFieldNameStrings));
+     memset(&pair, 0, sizeof(pair));
+ 
++    // Clear-signing: surface risk warnings as the first review screen(s).
++    detect_warnings(transaction);
++
+     pairList.pairs = NULL;
+-    pairList.nbPairs = transaction->num_fields;
++    pairList.nbPairs = transaction->num_fields + num_warnings;
+     pairList.nbMaxLinesForValue = 0;
+     pairList.callback = getPair;
+     pairList.startIndex = 0;

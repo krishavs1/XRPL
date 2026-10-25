@@ -59,6 +59,13 @@ rules, which ERC-7730 doesn't define.
    `device-signer-kit-xrp` **days after its pre-release**, running end-to-end
    (preview → device signature → settled testnet transaction), with DX
    feedback filed upstream as we went (FEEDBACK.md).
+8. **It runs in the real firmware.** We forked Ledger's XRP app and the
+   unverified-issuer warning renders on the device's own secure screen, inside
+   a native review (demoed on Speculos — Ledger's emulator running the real
+   app binary; see `firmware/`). The scam trustline warns; the verified issuer
+   doesn't. We're not asking Ledger to imagine it — we're asking them to adopt
+   the metadata standard so every wallet's rules ship this way, instead of
+   hardcoded C in a fork only we can run.
 
 ## Judge-specific lines
 
