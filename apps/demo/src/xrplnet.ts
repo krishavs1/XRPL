@@ -29,23 +29,38 @@ async function connected(url: string): Promise<Client> {
  * core library's fetch version: the public testnet JSON-RPC server sends no
  * CORS headers, but WebSocket connections aren't subject to CORS.
  */
+/**
+ * Turn any transaction — including a signed, validated one off the live feed —
+ * into a clean unsigned draft the ledger accepts for simulate/autofill:
+ * - drop server response decorations (date, hash, ledger_index, ctid, …);
+ *   real transaction fields are UpperCamelCase, decorations are lowercase;
+ * - drop the signature and the already-consumed sequencing fields;
+ * - undo the API v2 rename (DeliverMax → Amount) for payments.
+ */
+export function toUnsignedDraft(tx: Record<string, unknown>): Record<string, any> {
+  const draft: Record<string, any> = {};
+  for (const [k, v] of Object.entries(tx)) {
+    if (/^[A-Z]/.test(k)) draft[k] = v;
+  }
+  delete draft.TxnSignature;
+  delete draft.Signers;
+  delete draft.SigningPubKey;
+  delete draft.Sequence;
+  delete draft.TicketSequence;
+  delete draft.LastLedgerSequence;
+  if (draft.DeliverMax !== undefined) {
+    if (draft.Amount === undefined) draft.Amount = draft.DeliverMax;
+    delete draft.DeliverMax;
+  }
+  return draft;
+}
+
 export async function simulateViaWs(
   url: string,
   txJson: Record<string, unknown>
 ): Promise<SimulationResult> {
   const c = await connected(url);
-  // `simulate` only accepts unsigned drafts, and a transaction taken from the
-  // live ledger carries a signature and an already-consumed Sequence. Strip
-  // those so any transaction — including a validated one from the feed —
-  // simulates as a clean "what would this do right now" replay (the server
-  // autofills Sequence and fee).
-  const draft = { ...txJson };
-  delete draft.TxnSignature;
-  delete draft.Signers;
-  delete draft.SigningPubKey;
-  delete draft.Sequence;
-  delete draft.LastLedgerSequence;
-  delete (draft as any).hash;
+  const draft = toUnsignedDraft(txJson);
   try {
     const res: any = await c.request({ command: "simulate", tx_json: draft } as any);
     const r = res?.result ?? {};
@@ -149,11 +164,10 @@ export async function prepareForDevice(
 ): Promise<Record<string, any>> {
   const c = await connected(url);
   const draft: Record<string, any> = {
-    ...tx,
+    ...toUnsignedDraft(tx),
     Account: address,
     SigningPubKey: publicKey.toUpperCase(),
   };
-  delete draft.TxnSignature;
   const prepared = await c.autofill(draft as any);
   // autofill leaves ~1 minute to sign; give 10 so the device screen can be read.
   (prepared as any).LastLedgerSequence = (await c.getLedgerIndex()) + 150;
