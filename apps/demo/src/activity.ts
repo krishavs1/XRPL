@@ -70,3 +70,21 @@ export function timeAgo(ms: number): string {
   if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
   return new Date(ms).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
+
+/**
+ * Merge two activity lists (e.g. this browser's and the account's): the same
+ * transaction input is one entry, keeping the newest open and any simulate/sign result.
+ */
+export function mergeActivity(a: ActivityEntry[], b: ActivityEntry[]): ActivityEntry[] {
+  const byInput = new Map<string, ActivityEntry>();
+  for (const e of [...a, ...b]) {
+    const prev = byInput.get(e.input);
+    if (!prev) {
+      byInput.set(e.input, e);
+      continue;
+    }
+    const [newer, older] = e.at >= prev.at ? [e, prev] : [prev, e];
+    byInput.set(e.input, { ...older, ...newer, simulated: newer.simulated ?? older.simulated, signed: newer.signed ?? older.signed });
+  }
+  return [...byInput.values()].sort((x, y) => y.at - x.at).slice(0, MAX);
+}

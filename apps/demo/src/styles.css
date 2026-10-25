@@ -361,3 +361,30 @@ button.link:hover { background: none; text-decoration: underline; }
   .list-row { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .list-meta { align-items: flex-start; flex-direction: row; gap: 10px; }
 }
+
+/* Accounts */
+.account-btn { border: 2px solid var(--border); background: none; padding: 2px 12px; font-size: 20px; letter-spacing: 0.1em; color: var(--accent); box-shadow: none; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-btn.on { border-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
+.sync-error { margin: 0; padding: 8px 28px; background: var(--danger-bg); color: var(--danger-text); border-bottom: 2px solid var(--danger-border); font-size: 12.5px; }
+.auth-box { max-width: 440px; display: flex; flex-direction: column; gap: 14px; padding: 22px; border: 2px solid var(--border); background: var(--panel); box-shadow: 0 4px 0 var(--border-soft); }
+.auth-box > button.accent { width: 100%; }
+.auth-box .controls { margin: 0; }
+.auth-box .controls input { min-width: 0; }
+.or { display: flex; align-items: center; gap: 10px; color: var(--faint); font: 18px var(--pixel); letter-spacing: 0.2em; text-transform: uppercase; }
+.or::before, .or::after { content: ""; flex: 1; border-top: 2px dashed var(--border); }
+.list-row.static { cursor: default; }
+.list-row.static:hover { background: none; box-shadow: none; }
+.list-sub.mono { color: var(--ink); font-family: var(--mono); white-space: normal; word-break: break-all; }
+.row-actions { display: flex; gap: 14px; }
+.chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0 10px; }
+.chips .note { margin: 0; }
+.chip { font: 12px var(--mono); text-transform: none; letter-spacing: 0; padding: 3px 10px; color: var(--accent); border: 1px solid var(--accent-deep); box-shadow: none; }
+.chip.on { border-color: var(--accent); background: var(--accent-deep); }
+@media (max-width: 860px) {
+  .account-btn { font-size: 17px; padding: 2px 8px; max-width: 110px; flex: none; }
+  .net-pill { padding: 8px; }
+  .net-pill .net-label { display: none; }
+  header { gap: 8px; }
+  .topnav { gap: 0; }
+  .sync-error { padding-inline: 16px; }
+}

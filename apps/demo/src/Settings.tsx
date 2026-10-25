@@ -15,7 +15,7 @@ export function Settings({ endpoint, onChange }: { endpoint: string; onChange: (
   return (
     <div className="settings">
       <button className="net-pill" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-        <span className="dot" /> Testnet<span className="host"> · {host}</span>
+        <span className="dot" /><span className="net-label"> Testnet</span><span className="host"> · {host}</span>
       </button>
       {open && (
         <div className="settings-pop" role="dialog" aria-label="Network settings">

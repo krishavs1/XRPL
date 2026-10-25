@@ -2,11 +2,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { explain, type SimulationResult } from "xrpl-clear-signing";
 import { DEFAULT_WSS } from "./xrplnet";
 import { samples } from "./samples";
-import { loadActivity, recordOpened, saveActivity, updateEntry, type ActivityEntry } from "./activity";
+import { loadActivity, mergeActivity, recordOpened, saveActivity, updateEntry, type ActivityEntry } from "./activity";
+import { clearRemoteActivity, fetchRemoteActivity, pushActivity } from "./activitySync";
+import { useAccount } from "./account";
 import { Nav, type NavStep } from "./Nav";
 import { Settings } from "./Settings";
 import { HomeScreen } from "./screens/HomeScreen";
 import { HistoryScreen } from "./screens/HistoryScreen";
+import { AccountScreen } from "./screens/AccountScreen";
 import { ChooseScreen } from "./screens/ChooseScreen";
 import { ReviewScreen } from "./screens/ReviewScreen";
 import { SimulateScreen } from "./screens/SimulateScreen";
@@ -14,7 +17,7 @@ import { SignScreen } from "./screens/SignScreen";
 
 const STEPS = ["choose", "review", "simulate", "sign"] as const;
 type Step = (typeof STEPS)[number];
-type Route = "home" | "history" | Step;
+type Route = "home" | "history" | "account" | Step;
 const LABELS: Record<Step, string> = { choose: "Choose", review: "Review", simulate: "Simulate", sign: "Sign" };
 const isStep = (r: Route): r is Step => (STEPS as readonly string[]).includes(r);
 
@@ -22,7 +25,7 @@ const isStep = (r: Route): r is Step => (STEPS as readonly string[]).includes(r)
 function useRoute(): [Route, (r: Route) => void] {
   const read = (): Route => {
     const h = window.location.hash.replace(/^#\/?/, "") as Route;
-    return h === "history" || isStep(h) ? h : "home";
+    return h === "history" || h === "account" || isStep(h) ? h : "home";
   };
   const [route, setRoute] = useState<Route>(read);
   useEffect(() => {
@@ -75,10 +78,52 @@ export function App() {
   /** The activity entry for the transaction currently in the check flow */
   const entryId = useRef<string | null>(load("cs.entry"));
   const lastStep = useRef<Step>("choose");
+  const account = useAccount();
+  const userId = account.session?.user.id ?? null;
+  const [historyRequest, setHistoryRequest] = useState<{ address: string; n: number } | null>(null);
+  const [syncError, setSyncError] = useState("");
+  /** Account sync: what each entry looked like when last saved, so only changes are sent */
+  const pushed = useRef(new Map<string, string>());
+  const [syncReady, setSyncReady] = useState(false);
+  const prevUser = useRef<string | null>(null);
 
   useEffect(() => save("cs.input", input), [input]);
   useEffect(() => save("cs.source", JSON.stringify(source)), [source]);
   useEffect(() => saveActivity(activity), [activity]);
+
+  // Signing in merges this browser's activity with the account's; signing out drops the local copy.
+  useEffect(() => {
+    setSyncReady(false);
+    pushed.current = new Map();
+    if (!userId) {
+      if (prevUser.current) setActivity([]);
+      prevUser.current = null;
+      return;
+    }
+    prevUser.current = userId;
+    let cancelled = false;
+    fetchRemoteActivity()
+      .then((remote) => {
+        if (cancelled) return;
+        pushed.current = new Map(remote.map((e) => [e.id, JSON.stringify(e)]));
+        setActivity((local) => mergeActivity(local, remote));
+        setSyncError("");
+        setSyncReady(true);
+      })
+      .catch((e) => setSyncError(e.message ?? String(e)));
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  // While signed in, save new and changed entries to the account.
+  useEffect(() => {
+    if (!userId || !syncReady) return;
+    const changed = activity.filter((e) => pushed.current.get(e.id) !== JSON.stringify(e));
+    if (!changed.length) return;
+    for (const e of changed) pushed.current.set(e.id, JSON.stringify(e));
+    pushActivity(userId, changed).catch((e) => setSyncError(e.message ?? String(e)));
+  }, [activity, userId, syncReady]);
   if (isStep(route)) lastStep.current = route;
 
   const result = useMemo(() => {
@@ -156,8 +201,18 @@ export function App() {
             History
           </button>
         </nav>
+        {account.enabled && (
+          <button className={`account-btn${route === "account" ? " on" : ""}`} onClick={() => go("account")}>
+            {account.session ? `▣ ${account.email.split("@")[0]}` : "Sign in"}
+          </button>
+        )}
         <Settings endpoint={endpoint} onChange={setEndpoint} />
       </header>
+      {syncError && (
+        <p className="sync-error" role="alert">
+          Couldn't sync with your account: {syncError}
+        </p>
+      )}
       <div className={`shell${inFlow ? "" : " solo"}`}>
         {inFlow && <Nav steps={navSteps} current={route} onGo={(s) => go(s as Step)} />}
         <main className="content">
@@ -168,10 +223,27 @@ export function App() {
             <HistoryScreen
               activity={activity}
               onOpen={openEntry}
-              onClear={() => setActivity([])}
+              onClear={() => {
+                setActivity([]);
+                pushed.current = new Map();
+                if (userId) clearRemoteActivity(userId).catch((e) => setSyncError(e.message ?? String(e)));
+              }}
               endpoint={endpoint}
               deviceAccount={deviceAccount}
               onOpenTx={(tx, label) => pick(tx, { id: "ledger", label })}
+              wallets={account.wallets}
+              request={historyRequest}
+              synced={!!userId}
+            />
+          </div>
+          <div hidden={route !== "account"}>
+            <AccountScreen
+              account={account}
+              deviceAccount={deviceAccount}
+              onViewHistory={(address) => {
+                setHistoryRequest((r) => ({ address, n: (r?.n ?? 0) + 1 }));
+                go("history");
+              }}
             />
           </div>
           {/* Every check screen stays mounted so the device connection and feed survive navigation. */}
