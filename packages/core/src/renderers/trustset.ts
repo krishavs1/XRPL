@@ -1,6 +1,6 @@
 import type { DisplayField, DisplayIntent, RenderContext, RiskFlag } from "../types";
 import { decodeCurrency, formatAccount, setFlags, truncateAddress } from "../format";
-import { canonicalIssuerFor } from "../registry";
+import { canonicalIssuersFor } from "../registry";
 
 const TRUSTSET_FLAGS = {
   tfSetfAuth: 0x00010000,
@@ -22,7 +22,7 @@ export function renderTrustSet(tx: Record<string, any>, ctx: RenderContext): Dis
   const fields: DisplayField[] = [];
 
   const issuerEntry = ctx.registry.accounts[issuer];
-  const canonical = canonicalIssuerFor(currencyName, ctx.registry);
+  const canonicals = canonicalIssuersFor(currencyName, ctx.registry);
 
   fields.push({ label: "Currency", value: currencyName });
   fields.push({
@@ -43,13 +43,12 @@ export function renderTrustSet(tx: Record<string, any>, ctx: RenderContext): Dis
       message: `Issuer ${truncateAddress(issuer)} is not in the verified registry.`,
     });
   }
-  if (canonical && canonical.address !== issuer) {
+  if (canonicals.length && !canonicals.some((c) => c.address === issuer)) {
+    const names = canonicals.map((c) => `${c.name} (${truncateAddress(c.address)})`).join(", ");
     warnings.push({
       code: "CURRENCY_IMPERSONATION",
       severity: "danger",
-      message: `"${currencyName}" is canonically issued by ${canonical.name} (${truncateAddress(
-        canonical.address
-      )}), but this trustline points at a different account. Likely a scam token.`,
+      message: `"${currencyName}" is canonically issued by ${names}, but this trustline points at a different account. Likely a scam token.`,
     });
   }
   if (value >= UNLIMITED_THRESHOLD) {
