@@ -1,4 +1,4 @@
--- XRPL Clear Signing: account storage for "My activity".
+-- Clear: account storage for "My activity".
 -- Paste into the Supabase SQL editor once. Linked wallets need no table:
 -- they live in each user's own auth metadata.
 

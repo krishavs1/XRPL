@@ -1,5 +1,5 @@
 {
-  "name": "xrpl-clear-signing",
+  "name": "xrpl-clear",
   "version": "0.1.0",
   "description": "Clear Signing for the XRP Ledger: a display-metadata standard and reference parser that turns raw XRPL transactions into human-readable, risk-annotated previews.",
   "type": "module",

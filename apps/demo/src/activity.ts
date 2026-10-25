@@ -1,4 +1,4 @@
-import type { DisplayIntent } from "xrpl-clear-signing";
+import type { DisplayIntent } from "xrpl-clear";
 
 /**
  * "My activity": the transactions checked in this browser, kept in

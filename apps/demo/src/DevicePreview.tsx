@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { DeviceScreen } from "xrpl-clear-signing";
+import type { DeviceScreen } from "xrpl-clear";
 
 const HOLD_MS = 1100;
 

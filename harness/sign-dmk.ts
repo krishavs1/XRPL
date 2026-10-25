@@ -24,7 +24,7 @@ import {
 } from "@ledgerhq/device-transport-kit-speculos";
 import { firstValueFrom } from "rxjs";
 import { Client, Wallet, encode, type Payment } from "xrpl";
-import { explain } from "xrpl-clear-signing";
+import { explain } from "xrpl-clear";
 
 const SPECULOS_URL = process.env.SPECULOS_URL ?? "http://127.0.0.1:5000";
 const TESTNET_WSS = process.env.XRPL_WSS ?? "wss://s.altnet.rippletest.net:51233";

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { defaultRegistry, formatAccount, type DisplayIntent, type SimulationResult } from "xrpl-clear-signing";
+import { defaultRegistry, formatAccount, type DisplayIntent, type SimulationResult } from "xrpl-clear";
 import { simulateViaWs, simulationAccount } from "../xrplnet";
 import { PLACEHOLDER_ACCOUNT } from "../samples";
 

@@ -11,7 +11,7 @@
     "@ledgerhq/hw-transport-node-speculos-http": "^6.29.0",
     "rxjs": "^7.8.2",
     "xrpl": "^4.0.0",
-    "xrpl-clear-signing": "*"
+    "xrpl-clear": "*"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

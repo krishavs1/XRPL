@@ -1,4 +1,4 @@
-# Ledger DX feedback - XRPL Clear Signing team
+# Ledger DX feedback - Clear team
 
 > Ledger judges documentation feedback as much as code. Log everything here as
 > it happens; file the concrete ones as issues/PRs on LedgerHQ repos and link

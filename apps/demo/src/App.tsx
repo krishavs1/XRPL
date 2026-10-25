@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { explain, type SimulationResult } from "xrpl-clear-signing";
+import { explain, type SimulationResult } from "xrpl-clear";
 import { DEFAULT_WSS } from "./xrplnet";
 import { samples } from "./samples";
 import { loadActivity, mergeActivity, recordOpened, saveActivity, updateEntry, type ActivityEntry } from "./activity";
@@ -197,7 +197,7 @@ export function App() {
               <circle cx="34" cy="31" r="6.5" />
             </g>
           </svg>
-          <h1>XRPL Clear Signing</h1>
+          <h1>Clear</h1>
         </button>
         <nav className="topnav" aria-label="Main">
           <button className={route === "home" ? "on" : ""} onClick={() => go("home")}>

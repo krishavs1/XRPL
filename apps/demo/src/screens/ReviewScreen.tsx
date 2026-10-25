@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { encode } from "xrpl";
-import type { DisplayIntent } from "xrpl-clear-signing";
+import type { DisplayIntent } from "xrpl-clear";
 
 function Warnings({ intent }: { intent: DisplayIntent }) {
   return (

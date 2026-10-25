@@ -1,4 +1,4 @@
-# XRPL Clear Signing
+# Clear
 
 **Stop blind-signing on the XRP Ledger.** A display-metadata standard
 (ERC-7730-style, for XRPL) plus a reference TypeScript parser that turns any
@@ -25,7 +25,7 @@ equivalent.
    standardized risk codes, Batch recursion rules, and a device rendering
    profile. `spec/DISCUSSION-POST.md` is the pre-proposal write-up for
    XRPL-Standards.
-2. **`packages/core`** (`xrpl-clear-signing`) - the reference parser:
+2. **`packages/core`** (`xrpl-clear`) - the reference parser:
    `explain(blobOrJson) → DisplayIntent` for TrustSet, SetRegularKey,
    SignerListSet, AccountSet and AccountDelete (JSON metadata documents) and
    Payment, OfferCreate, EscrowCreate, AMMDeposit and Batch (TypeScript
@@ -88,7 +88,7 @@ or run `npx tsx harness/sign-dmk.ts`.
 ## Layout
 
 ```
-packages/core   the xrpl-clear-signing library (parser, registry, simulate)
+packages/core   the xrpl-clear library (parser, registry, simulate)
 apps/demo       the web tool
 harness         standalone Ledger signing scripts
 spec            the draft standard + the XRPL-Standards discussion post

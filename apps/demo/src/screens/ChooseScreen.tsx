@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { explain } from "xrpl-clear-signing";
+import { explain } from "xrpl-clear";
 import { samples } from "../samples";
 import { FeedPanel } from "../FeedPanel";
 import type { Source } from "../App";

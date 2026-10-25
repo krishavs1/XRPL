@@ -1,7 +1,7 @@
 # Draft: Transaction Display Metadata for the XRP Ledger
 
 **Status:** Draft for discussion (written at the AI & Fintech XRPL Hackathon, NYC, Oct 2026)
-**Reference implementation:** `xrpl-clear-signing` (this repository)
+**Reference implementation:** `xrpl-clear` (this repository)
 **Prior art:** ERC-7730 (Ledger's Clear Signing metadata standard for EVM calldata)
 
 ## Abstract

@@ -1,4 +1,4 @@
-# Pitch notes - XRPL Clear Signing
+# Pitch notes - Clear
 
 ## One-liner
 

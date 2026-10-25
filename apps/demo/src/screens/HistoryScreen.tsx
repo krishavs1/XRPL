@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { isValidClassicAddress } from "xrpl";
-import { explain, type DisplayIntent } from "xrpl-clear-signing";
+import { explain, type DisplayIntent } from "xrpl-clear";
 import type { ActivityEntry } from "../activity";
 import type { LinkedWallet } from "../account";
 import { ActivityList } from "../ActivityList";

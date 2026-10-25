@@ -1,5 +1,5 @@
 import { Client, Wallet, encode, getBalanceChanges } from "xrpl";
-import type { SimulationResult } from "xrpl-clear-signing";
+import type { SimulationResult } from "xrpl-clear";
 
 // Set VITE_XRPL_WSS in apps/demo/.env.local (gitignored - endpoint tokens stay
 // out of the repo) to default every network call to that node, e.g. QuickNode.

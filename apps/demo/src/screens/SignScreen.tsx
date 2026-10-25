@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { SignerXrp } from "@ledgerhq/device-signer-kit-xrp";
-import { defaultRegistry, toDeviceScreens, type DisplayIntent } from "xrpl-clear-signing";
+import { defaultRegistry, toDeviceScreens, type DisplayIntent } from "xrpl-clear";
 import { DevicePreview } from "../DevicePreview";
 import { SPECULOS_URL, connectDevice, getDeviceAddress, signOnDevice, type TransportChoice } from "../ledger";
 import { SpeculosScreen } from "../SpeculosScreen";

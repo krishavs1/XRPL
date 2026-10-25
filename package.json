@@ -1,5 +1,5 @@
 {
-  "name": "xrpl-clear-signing-monorepo",
+  "name": "xrpl-clear-monorepo",
   "private": true,
   "version": "0.1.0",
   "workspaces": [

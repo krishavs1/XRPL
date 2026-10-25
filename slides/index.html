@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clear</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reset.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/theme/white.min.css" />
+  <style>
+    /* Same palette as apps/demo (light theme, Manrope, blue #006aff). */
+    :root {
+      --blue: #006aff;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --soft: #f1f5f9;
+      --danger: #dc2626;
+      --danger-soft: #fef2f2;
+      --ok: #16a34a;
+      --r-main-font: "Manrope", system-ui, sans-serif;
+      --r-heading-font: "Manrope", system-ui, sans-serif;
+      --r-code-font: "JetBrains Mono", ui-monospace, monospace;
+      --r-main-color: var(--ink);
+      --r-heading-color: var(--ink);
+      --r-link-color: var(--blue);
+      --r-main-font-size: 34px;
+    }
+    body { background: #fff; }
+    .reveal h1, .reveal h2, .reveal h3 { font-weight: 800; letter-spacing: -0.02em; text-transform: none; text-wrap: balance; }
+    .reveal h2 { font-size: 1.6em; margin-bottom: 0.6em; }
+    .reveal section { text-align: left; }
+    .reveal .kicker { color: var(--blue); font-weight: 700; font-size: 0.55em; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.4em; }
+    .reveal .muted { color: var(--muted); }
+    .reveal .small { font-size: 0.7em; }
+    .reveal .big { font-size: 1.25em; font-weight: 700; line-height: 1.3; }
+    .reveal strong { color: var(--ink); font-weight: 800; }
+    .reveal .blue { color: var(--blue); }
+    .reveal .red, .reveal .red strong { color: var(--danger); }
+    .reveal ul { margin-left: 1em; }
+    .reveal li { margin: 0.45em 0; line-height: 1.35; }
+    .reveal code { font-size: 0.85em; background: var(--soft); padding: 0.05em 0.3em; border-radius: 4px; }
+    .reveal pre { box-shadow: none; width: 100%; font-size: 0.5em; }
+    .reveal pre code { background: var(--soft); border: 1px solid var(--line); border-radius: 10px; padding: 1em 1.2em; max-height: 560px; line-height: 1.45; }
+    .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2em; align-items: start; }
+    .cols-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8em; }
+    .card { border: 1px solid var(--line); border-radius: 14px; padding: 0.7em 0.9em; background: #fff; font-size: 0.7em; }
+    .card h3 { font-size: 1.1em; margin: 0 0 0.3em; }
+    .card p { margin: 0; line-height: 1.4; }
+    .card.danger { border-color: #fecaca; background: var(--danger-soft); }
+    .card.accent { border-color: #bfdbfe; background: #eff6ff; }
+    .title-slide h1 { font-size: 2.8em; line-height: 1.05; margin: 0.2em 0; }
+    .title-slide .tag { font-size: 0.85em; color: var(--muted); }
+
+    /* Title entrance: lines rise in one after another. */
+    .rise { display: inline-block; opacity: 0; transform: translateY(0.4em); }
+    .present .rise { animation: rise 0.7s cubic-bezier(.2,.7,.2,1) forwards; }
+    .present .rise.d1 { animation-delay: 0.15s; }
+    .present .rise.d2 { animation-delay: 0.45s; }
+    .present .rise.d3 { animation-delay: 0.9s; }
+    @keyframes rise { to { opacity: 1; transform: none; } }
+    .blue-underline { background: linear-gradient(var(--blue), var(--blue)) no-repeat 0 92% / 0 0.08em; }
+    .present .blue-underline { animation: underline 0.6s 1.3s ease-out forwards; }
+    @keyframes underline { to { background-size: 100% 0.08em; } }
+
+
+    /* Raw field listing */
+    .raw { font-family: var(--r-code-font); font-size: 0.5em; background: var(--soft); border: 1px solid var(--line); border-radius: 12px; padding: 0.9em 1.1em; line-height: 1.7; transition: border-color .4s, background .4s, transform .4s; }
+    .raw .k { color: var(--muted); display: inline-block; width: 10.5em; }
+    .raw mark { background: #fde68a; padding: 0 0.15em; border-radius: 3px; }
+    /* Fragment that marks trustline A as the scam. */
+    .scam-flag { display: none; }
+    .scam-flag.visible ~ .cols .raw.a { border-color: var(--danger); background: var(--danger-soft); transform: scale(1.03); }
+
+    /* Device screens (rendered from toDeviceScreens output) */
+    .device-row { display: flex; gap: 0.5em; flex-wrap: wrap; }
+    .screen { width: 8.6em; min-height: 4.6em; background: #111; color: #f8fafc; border-radius: 10px; padding: 0.55em 0.6em; font-size: 0.48em; line-height: 1.35; box-shadow: 0 0 0 4px #334155; }
+    .screen b { display: block; font-size: 0.75em; letter-spacing: 0.04em; margin-bottom: 0.3em; }
+    .screen.warn b { color: #f87171; }
+    .screen.final { box-shadow: 0 0 0 4px var(--danger); }
+    .present .device-row.visible .screen.final { animation: pulse 1.4s 0.4s ease-in-out 2; }
+    @keyframes pulse { 50% { box-shadow: 0 0 0 4px var(--danger), 0 0 0 14px rgba(220, 38, 38, 0.18); } }
+
+    /* Pipeline */
+    .pipe { display: flex; align-items: stretch; gap: 0.4em; font-size: 0.6em; }
+    .pipe .step { flex: 1; border: 1px solid var(--line); border-radius: 12px; padding: 0.7em; background: #fff; }
+    .pipe .step b { display: block; color: var(--blue); font-family: var(--r-code-font); font-size: 0.95em; margin-bottom: 0.3em; }
+    .pipe .arrow { align-self: center; color: var(--muted); font-size: 1.4em; }
+    .pipe.compact { font-size: 0.42em; }
+
+
+    .reveal .progress { color: var(--blue); }
+    .reveal .controls { color: var(--blue); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .rise { opacity: 1; transform: none; }
+      .present .rise, .present .blue-underline, .present .device-row.visible .screen.final { animation: none; }
+      .blue-underline { background-size: 100% 0.08em; }
+    }
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+  <!-- 1. Title -->
+  <section class="title-slide">
+    <div class="kicker rise d1">Clear</div>
+    <h1><span class="rise d2">Stop blind-signing</span><br /><span class="rise d3">on the <span class="blue blue-underline">XRP Ledger</span>.</span></h1>
+    <aside class="notes">
+      One line: ERC-7730 for XRPL. A standard plus a reference library plus a working demo on a Ledger emulator.
+    </aside>
+  </section>
+
+  <!-- 2. Problem -->
+  <section>
+    <div class="kicker">The problem</div>
+    <h2>You sign what you can't read</h2>
+    <ul>
+      <li>Every wallet <strong>builds its own</strong> transaction display.</li>
+      <li>Hardware wallets show <strong>raw fields</strong>, or ask you to turn on <strong>"Blind signing"</strong>.</li>
+      <li><strong>Batch</strong>: one signature, up to 8 hidden transactions.</li>
+    </ul>
+    <aside class="notes">
+      Ledger's own XRP app has a "Blind signing" setting for types it can't render. That setting existing is our reason to exist.
+    </aside>
+  </section>
+
+  <!-- 3. Problem, concretely -->
+  <section>
+    <div class="kicker">The problem, concretely</div>
+    <h2>Spot the scam</h2>
+    <span class="fragment scam-flag" data-fragment-index="1"></span>
+    <div class="cols">
+      <div>
+        <p class="small"><strong>Trustline A</strong></p>
+        <div class="raw a">
+          <span class="k">TransactionType</span>TrustSet<br />
+          <span class="k">Currency</span>RLUSD<br />
+          <span class="k">Issuer</span><mark>rapcCizU9u5EeaNT8rrzXESwbJcj5VUuKn</mark><br />
+          <span class="k">Value</span>1000000000
+        </div>
+      </div>
+      <div>
+        <p class="small"><strong>Trustline B</strong></p>
+        <div class="raw b">
+          <span class="k">TransactionType</span>TrustSet<br />
+          <span class="k">Currency</span>RLUSD<br />
+          <span class="k">Issuer</span><mark>rFKWLRVzHatrpvFEvYv5xxVLsvuoXZppu</mark><br />
+          <span class="k">Value</span>10000
+        </div>
+      </div>
+    </div>
+    <p class="fragment fade-up small" data-fragment-index="1" style="margin-top:1em">
+      <span class="red"><strong>A is a fake RLUSD issuer</strong></span> with a 1 billion limit. The ledger accepts it without complaint.
+    </p>
+    <aside class="notes">
+      Raw fields of the two demo fixtures. Ask the room which one they'd sign, then click. simulate returns tesSUCCESS for A: it's a valid transaction. Only a metadata layer can catch it.
+    </aside>
+  </section>
+
+  <!-- 4. Inspiration -->
+  <section>
+    <div class="kicker">Inspiration</div>
+    <h2>Ethereum learned this the hard way</h2>
+    <div class="cols-3">
+      <div class="card danger"><h3>Feb 2025 · Bybit</h3><p><strong>$1.5B</strong> stolen through hardware-wallet signatures.</p></div>
+      <div class="card accent"><h3>ERC-7730</h3><p>Ethereum's fix: JSON metadata turns contract calls into readable intent.</p></div>
+      <div class="card"><h3>XRPL</h3><p>No equivalent, though its fixed transaction set makes it <strong>easier</strong>.</p></div>
+    </div>
+    <p class="big fragment fade-up" style="margin-top:1.2em">So we wrote one, and went further:<br /><span class="blue">standard risk codes, Batch unfolding, scam-token detection.</span></p>
+    <aside class="notes">
+      EIP-712 (2017) only covered messages. ERC-7730 is Ledger's Clear Signing standard: metadata per contract, reviewed in a public registry, shown on the device screen. Risk codes, Batch recursion and impersonation detection are things ERC-7730 doesn't define.
+    </aside>
+  </section>
+
+  <!-- 5. Solution -->
+  <section>
+    <div class="kicker">The solution</div>
+    <h2>One JSON file per transaction type</h2>
+    <div class="cols" style="grid-template-columns: 1.35fr 1fr;">
+      <pre><code class="language-json" data-trim>
+{
+  "txType": "TrustSet",
+  "title": "Set trustline",
+  "intent": "Trust up to {LimitAmount.value}
+    {LimitAmount.currency|currency} issued by
+    {LimitAmount.issuer|account}.",
+  "risks": [
+    { "code": "CURRENCY_IMPERSONATION",
+      "severity": "danger",
+      "when": { "impersonates": {
+        "currency": "LimitAmount.currency",
+        "issuer":   "LimitAmount.issuer" } } }
+  ]
+}
+      </code></pre>
+      <ul class="small">
+        <li>A <strong>sentence</strong> in plain English</li>
+        <li><strong>23 standard risk codes</strong>, as data, not code</li>
+        <li>A <strong>registry</strong> that knows the real RLUSD issuer</li>
+        <li><strong>9 types</strong> today; a new type is one file</li>
+      </ul>
+    </div>
+    <aside class="notes">
+      Abridged from packages/core/metadata/TrustSet.json. No expression strings, no eval: small enough for a hardware wallet. Deterministic: no AI or external service at signing time. Examples of codes: UNVERIFIED_ISSUER, UNLIMITED_TRUSTLINE, PARTIAL_PAYMENT, REGULAR_KEY_CHANGE, BATCH_MULTI_EXECUTION.
+    </aside>
+  </section>
+
+  <!-- 6. How it works -->
+  <section>
+    <div class="kicker">How it works</div>
+    <h2 style="font-size:1.4em">Trustline A, start to finish</h2>
+    <div class="pipe compact">
+      <div class="step"><b>input</b>Hex or JSON</div><div class="arrow">→</div>
+      <div class="step"><b>explain()</b>Sentence + risks</div><div class="arrow">→</div>
+      <div class="step"><b>simulateTx()</b>Optional dry run</div><div class="arrow">→</div>
+      <div class="step"><b>toDeviceScreens()</b>Device screens</div>
+    </div>
+    <div class="device-row fragment fade-up" style="margin-top:0.9em">
+      <div class="screen warn"><b>⚠ UNVERIFIED_<wbr>ISSUER</b>Issuer rapcCiz…VUuKn is not in the verified registry.</div>
+      <div class="screen warn"><b>⚠ CURRENCY_<wbr>IMPERSONATION</b>"RLUSD" is canonically issued by Ripple (RLUSD)…</div>
+      <div class="screen warn"><b>⚠ UNLIMITED_<wbr>TRUSTLINE</b>Limit is effectively unlimited.</div>
+      <div class="screen"><b>Review</b>Set trustline</div>
+      <div class="screen"><b>Issuer</b>rapcCiz…VUuKn · unverified</div>
+      <div class="screen final warn"><b>Reject recommended</b>3 danger warnings. Hold to sign anyway.</div>
+    </div>
+    <p class="small muted" style="margin-top:0.9em">Also running inside a forked Ledger XRP app on Speculos. The stock app still shows raw fields.</p>
+    <aside class="notes">
+      Real toDeviceScreens() output for the scam fixture, not a mockup. Danger first, unverified names never shown, last screen changes. The firmware fork is emulator-only: physical devices need Ledger-signed firmware, which is why this is a standard, not a fork.
+    </aside>
+  </section>
+
+  <!-- 7. How to use it -->
+  <section>
+    <div class="kicker">How to use it</div>
+    <h2>Three calls for any wallet</h2>
+    <div class="cols" style="grid-template-columns: 1.3fr 1fr;">
+      <pre><code class="language-ts" data-trim>
+import { explain, toDeviceScreens, simulateTx,
+         defaultRegistry } from "xrpl-clear";
+
+const intent = explain(txBlobOrJson);
+intent.warnings; // UNVERIFIED_ISSUER, …
+
+const screens = toDeviceScreens(intent, defaultRegistry);
+const sim = await simulateTx(intent.raw); // optional
+      </code></pre>
+      <div class="small">
+        <p><strong>Live demo</strong></p>
+        <ol>
+          <li>Choose</li>
+          <li>Review</li>
+          <li>Simulate</li>
+          <li>Sign on Ledger</li>
+        </ol>
+      </div>
+    </div>
+    <aside class="notes">
+      The library lives in packages/core; it is not on npm yet. Switch to the live demo here. Sign runs on Speculos with Ledger's pre-release XRP signer kit, settled on testnet.
+    </aside>
+  </section>
+
+  <!-- 8. Next steps -->
+  <section>
+    <div class="kicker">Next steps</div>
+    <h2>From draft to standard</h2>
+    <div class="cols" style="gap:0.8em">
+      <div class="card"><h3>Standard</h3><p>Post to XRPL-Standards. Signed per-network registries.</p></div>
+      <div class="card"><h3>Risk checks</h3><p>Payment destinations, Batch signers, simulate results.</p></div>
+      <div class="card"><h3>Devices</h3><p>Propose the device profile to Ledger. Test on hardware.</p></div>
+      <div class="card"><h3>Ecosystem</h3><p>File our signer-kit feedback. Wallet integrations.</p></div>
+    </div>
+    <aside class="notes">
+      Be explicit: the spec isn't posted yet and the feedback isn't filed yet. More types next: MPT, Credentials, Vaults (XLS-65), Lending (XLS-66).
+    </aside>
+  </section>
+
+  <!-- 9. Close -->
+  <section class="title-slide">
+    <div class="kicker rise d1">Clear</div>
+    <h1><span class="rise d2">Same intent. Same warnings.</span><br /><span class="rise d3 blue">Every wallet.</span></h1>
+    <p class="tag rise d3">Questions?</p>
+  </section>
+
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/notes/notes.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/highlight/highlight.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" />
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: "c/t",
+    transition: "fade",
+    backgroundTransition: "fade",
+    autoAnimateDuration: 0.8,
+    width: 1280,
+    height: 720,
+    margin: 0.06,
+    plugins: [RevealNotes, RevealHighlight],
+  });
+</script>
+</body>
+</html>

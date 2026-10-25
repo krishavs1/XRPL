@@ -11,7 +11,7 @@
 import SpeculosHttpTransport from "@ledgerhq/hw-transport-node-speculos-http";
 import Xrp from "@ledgerhq/hw-app-xrp";
 import { encode } from "xrpl";
-import { explain } from "xrpl-clear-signing";
+import { explain } from "xrpl-clear";
 
 const DERIVATION_PATH = "44'/144'/0'/0/0";
 const SPECULOS_URL = process.env.SPECULOS_URL ?? "http://127.0.0.1:5000";
