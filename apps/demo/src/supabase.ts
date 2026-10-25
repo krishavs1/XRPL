@@ -20,5 +20,13 @@ export const supabase: SupabaseClient | null =
       })
     : null;
 
+/** Sign-in providers switched on in the Supabase project (e.g. { email: true, google: false }). */
+export async function enabledProviders(): Promise<Record<string, boolean>> {
+  if (!url || !anonKey) return {};
+  const res = await fetch(`${url}/auth/v1/settings`, { headers: { apikey: anonKey } });
+  if (!res.ok) return {};
+  return ((await res.json()).external ?? {}) as Record<string, boolean>;
+}
+
 /** Where auth emails and OAuth send the user back: this page, without a hash route. */
 export const redirectTo = () => window.location.origin + window.location.pathname;

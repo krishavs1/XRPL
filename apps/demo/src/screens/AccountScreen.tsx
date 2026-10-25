@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { isValidClassicAddress } from "xrpl";
 import { setWallets, signInWithEmail, signInWithGoogle, signOut, type Account, type LinkedWallet } from "../account";
+import { enabledProviders } from "../supabase";
 
 interface Props {
   account: Account;
@@ -17,6 +18,11 @@ export function AccountScreen({ account, deviceAccount, onViewHistory }: Props) 
   const [address, setAddress] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // Only offer Google once it's switched on in Supabase; otherwise the redirect lands on a raw error page.
+  const [google, setGoogle] = useState(false);
+  useEffect(() => {
+    if (account.enabled) enabledProviders().then((p) => setGoogle(!!p.google)).catch(() => {});
+  }, [account.enabled]);
 
   async function run(fn: () => Promise<void>) {
     setBusy(true);
@@ -57,10 +63,14 @@ export function AccountScreen({ account, deviceAccount, onViewHistory }: Props) 
           <p>Save your checks to your account and see them on any device. Link your XRPL wallets to follow their history.</p>
         </div>
         <div className="auth-box">
-          <button className="accent" onClick={() => run(signInWithGoogle)} disabled={busy}>
-            Continue with Google
-          </button>
-          <div className="or">or</div>
+          {google && (
+            <>
+              <button className="accent" onClick={() => run(signInWithGoogle)} disabled={busy}>
+                Continue with Google
+              </button>
+              <div className="or">or</div>
+            </>
+          )}
           {sent ? (
             <p className="note">
               Check <strong>{email}</strong> for a sign-in link. Open it in this browser.
@@ -77,7 +87,7 @@ export function AccountScreen({ account, deviceAccount, onViewHistory }: Props) 
               }}
             >
               <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" aria-label="Email" />
-              <button type="submit" disabled={busy || !email.trim()}>
+              <button type="submit" className={google ? undefined : "accent"} disabled={busy || !email.trim()}>
                 Email me a link
               </button>
             </form>

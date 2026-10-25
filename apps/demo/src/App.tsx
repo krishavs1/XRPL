@@ -203,7 +203,16 @@ export function App() {
         </nav>
         {account.enabled && (
           <button className={`account-btn${route === "account" ? " on" : ""}`} onClick={() => go("account")}>
-            {account.session ? `▣ ${account.email.split("@")[0]}` : "Sign in"}
+            {account.session ? (
+              <>
+                <span className="avatar" aria-hidden="true">
+                  {account.email.charAt(0).toUpperCase()}
+                </span>
+                <span className="who">{account.email.split("@")[0]}</span>
+              </>
+            ) : (
+              "Sign in"
+            )}
           </button>
         )}
         <Settings endpoint={endpoint} onChange={setEndpoint} />
