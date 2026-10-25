@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { encode } from "xrpl";
-import { decodeCurrency, explain } from "../src/index";
+import { decodeCurrency, defaultRegistry, explain, toDeviceScreens, truncateMiddle, withEntries } from "../src/index";
 
 // "RLUSD" as a 160-bit hex currency code
 const RLUSD_HEX = "524C555344" + "0".repeat(30);
@@ -209,5 +209,61 @@ describe("display metadata documents", () => {
   it("rejects malformed documents at load time", () => {
     const bad = { version: "0.1", txType: "X", title: "X", intent: "X", fields: [], risks: [{ code: "R", severity: "warn", when: { eval: "1" }, message: "" }] };
     expect(() => explain({ TransactionType: "X" }, { metadata: [bad as any] })).toThrow(/condition/);
+  });
+});
+
+describe("device profile", () => {
+  const scam = {
+    TransactionType: "TrustSet",
+    Account: ACCOUNT_ZERO,
+    LimitAmount: { currency: RLUSD_HEX, issuer: ACCOUNT_ONE, value: "1000000000" },
+  };
+  const legit = {
+    TransactionType: "TrustSet",
+    Account: ACCOUNT_ZERO,
+    LimitAmount: { currency: RLUSD_HEX, issuer: "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De", value: "1000" },
+  };
+
+  it("renders danger warnings before anything else and asks to reject", () => {
+    const screens = toDeviceScreens(explain(scam), defaultRegistry);
+    expect(screens.slice(0, 3).map((s) => s.kind)).toEqual(["warning", "warning", "warning"]);
+    expect(screens[0].severity).toBe("danger");
+    expect(screens.at(-1)).toMatchObject({ kind: "approve", heading: "Reject recommended" });
+  });
+
+  it("looks different for a safe transaction: no warnings, plain approval", () => {
+    const screens = toDeviceScreens(explain(legit), defaultRegistry);
+    expect(screens[0].kind).toBe("title");
+    expect(screens.some((s) => s.kind === "warning")).toBe(false);
+    expect(screens.at(-1)?.heading).toBe("Sign transaction?");
+    expect(screens.find((s) => s.heading === "Issuer")?.body).toBe("Ripple (RLUSD) ✓ · rMxCKbE…8m5De");
+  });
+
+  it("never shows an unverified registry name", () => {
+    const registry = withEntries(defaultRegistry, [
+      { address: ACCOUNT_ONE, name: "Ripple Official", verified: false },
+    ]);
+    const screens = toDeviceScreens(explain(scam, { registry }), registry);
+    const issuer = screens.find((s) => s.heading === "Issuer")!;
+    expect(issuer.body).not.toContain("Ripple Official");
+    expect(issuer.body).toContain("unverified");
+  });
+
+  it("unfolds Batch inner transactions into their own screens", () => {
+    const batch = {
+      TransactionType: "Batch",
+      Account: ACCOUNT_ZERO,
+      Flags: 0x00010000,
+      RawTransactions: [{ RawTransaction: scam }, { RawTransaction: legit }],
+    };
+    const headings = toDeviceScreens(explain(batch), defaultRegistry).map((s) => s.heading);
+    expect(headings).toContain("#1 Issuer");
+    expect(headings).toContain("#2 Issuer");
+    expect(headings[0]).toBe("BATCH_MULTI_EXECUTION");
+  });
+
+  it("truncates long values middle-out", () => {
+    expect(truncateMiddle("abcdefghijklmnopqrstuvwxyz", 11)).toBe("abcde…vwxyz");
+    expect(truncateMiddle("short", 11)).toBe("short");
   });
 });

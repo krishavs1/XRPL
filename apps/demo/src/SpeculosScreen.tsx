@@ -77,9 +77,13 @@ export function SpeculosScreen({ url }: { url: string }) {
           )}
         </>
       ) : (
-        <p className="hint">
-          Speculos isn't running at {base}. Start it with <code>./run-speculos.sh stax</code>.
-        </p>
+        <div className="device-frame off">
+          <span>
+            Speculos isn't running.
+            <br />
+            Start it with <code>./run-speculos.sh stax</code>
+          </span>
+        </div>
       )}
     </div>
   );

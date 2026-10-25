@@ -11,6 +11,8 @@ export interface DisplayField {
   label: string;
   value: string;
   risk?: RiskSeverity;
+  /** Raw address when the field is an account, so device profiles can apply the verified-name rule */
+  account?: string;
 }
 
 /** The structured, wallet-agnostic output a signer UI (or device) renders. */

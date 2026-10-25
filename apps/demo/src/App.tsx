@@ -190,6 +190,7 @@ export function App() {
 
           <LedgerPanel
             tx={(result.intent?.raw as Record<string, unknown>) ?? null}
+            intent={result.intent}
             onPrepared={(tx) => setInput(JSON.stringify(tx, null, 2))}
             onAddress={setDeviceAccount}
           />

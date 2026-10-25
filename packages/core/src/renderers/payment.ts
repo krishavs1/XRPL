@@ -15,7 +15,7 @@ export function renderPayment(tx: Record<string, any>, ctx: RenderContext): Disp
   const destEntry = ctx.registry.accounts[dest];
   const partial = ((tx.Flags ?? 0) & PAYMENT_FLAGS.tfPartialPayment) !== 0;
 
-  fields.push({ label: "To", value: formatAccount(dest, ctx.registry) });
+  fields.push({ label: "To", value: formatAccount(dest, ctx.registry), account: dest });
   fields.push({ label: "Amount", value: formatAmount(amount, ctx.registry), risk: partial ? "danger" : undefined });
   if (tx.SendMax) {
     fields.push({ label: "Send max", value: formatAmount(tx.SendMax, ctx.registry) });

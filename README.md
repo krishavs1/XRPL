@@ -78,8 +78,11 @@ or run `npx tsx harness/sign-dmk.ts`.
 3. Load the legit RLUSD TrustSet → clean preview, verified issuer ✓.
 4. Load the Batch → one signature, two inner transactions unfolded, their
    warnings bubbled up.
-5. Sign on the Ledger → the device shows the same transaction on its secure
-   screen, and it settles on testnet.
+5. Sign on the Ledger → the scam's sign button stays locked until you
+   acknowledge its danger warnings. Side by side: today's Ledger XRP app shows
+   raw fields that look identical for the scam and the real issuer; the
+   clear-signing device preview leads with "⚠ CURRENCY_IMPERSONATION" and ends
+   with "Reject recommended". It settles on testnet.
 
 ## Layout
 
@@ -113,10 +116,11 @@ PITCH.md        pitch notes and prize-track mapping
       `src/metadata.ts`; callers can add types with `explain(tx, { metadata })`.
 - [ ] Move Payment, OfferCreate, EscrowCreate and AMMDeposit to metadata
       documents (Batch stays code: it's a pipeline rule).
-- [ ] Device profile: the Ledger shows its own XRP app's rendering, not
-      `explain()` output; danger-first ordering and middle-out truncation
-      aren't implemented. Don't claim "same intent on the device screen" until
-      this is resolved.
+- [x] Device profile: `toDeviceScreens()` in `packages/core/src/device.ts`
+      implements the spec's rules; the demo shows it next to the live
+      Speculos screen and gates signing on danger warnings.
+- [ ] On-device clear signing: the Ledger XRP app (C firmware) still renders
+      raw fields. Port the device profile there, or propose it to Ledger.
 - [ ] Per-network registries: `issuers.json` is labelled mainnet but contains
       the testnet RLUSD issuer, and `explain()` takes no network option. Split
       the file and select by network.

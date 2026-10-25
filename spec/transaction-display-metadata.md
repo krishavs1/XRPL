@@ -134,9 +134,26 @@ Unknown types/fields render raw with `NO_DISPLAY_METADATA`. Nothing is hidden.
 
 ### Device profile
 
-Secure-screen constraints: fields render in metadata order; `danger` risks
-render before fields; strings truncate middle-out; registry names render only
-with the verified mark.
+The device profile maps a rendered intent to the ordered screens a signing
+device shows. Its job is to make a dangerous transaction look different from a
+safe one at the moment of approval:
+
+1. `danger` risks render first, before the title and any field.
+2. Then the title, then fields in metadata order. Values longer than the
+   screen truncate middle-out (keep the start and end, which users compare).
+3. An account renders its registry name only if the entry is verified;
+   otherwise it shows the truncated address marked "unverified". An
+   unverified name is attacker-chosen text and MUST NOT be shown.
+4. Batch inner transactions render as their own screen groups, after the
+   outer fields.
+5. `warn` and `info` risks render after the fields.
+6. The final approval screen MUST differ when any `danger` risk fired
+   (reference: "Reject recommended", vs. "Sign transaction?" otherwise).
+
+Software wallets SHOULD likewise block one-click approval when a `danger` risk
+fired, requiring an explicit acknowledgement of the risk codes.
+
+Reference implementation: `toDeviceScreens()` in `packages/core/src/device.ts`.
 
 ## Extensibility
 

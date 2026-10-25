@@ -55,6 +55,7 @@ function dispatch(tx: Record<string, any>, ctx: RenderContext, metadata: Record<
 export * from "./types";
 export { toTxJson } from "./decode";
 export { renderFromMetadata, validateMetadata } from "./metadata";
+export { toDeviceScreens, truncateMiddle, type DeviceScreen, type DeviceProfileOptions } from "./device";
 export { builtinMetadata };
 export { simulateTx, DEFAULT_TESTNET_RPC, type SimulationResult } from "./simulate";
 export { defaultRegistry, withEntries, canonicalIssuerFor } from "./registry";

@@ -7,7 +7,7 @@ export function renderEscrowCreate(tx: Record<string, any>, ctx: RenderContext):
   const dest = String(tx.Destination ?? "?");
 
   fields.push({ label: "Lock", value: formatAmount(tx.Amount, ctx.registry) });
-  fields.push({ label: "Releasable to", value: formatAccount(dest, ctx.registry) });
+  fields.push({ label: "Releasable to", value: formatAccount(dest, ctx.registry), account: dest });
   if (tx.FinishAfter !== undefined) fields.push({ label: "Releasable after", value: rippleTimeToISO(tx.FinishAfter) });
   if (tx.CancelAfter !== undefined) fields.push({ label: "Refundable after", value: rippleTimeToISO(tx.CancelAfter) });
   if (tx.Condition) {

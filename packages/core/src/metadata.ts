@@ -131,10 +131,12 @@ export function renderFromMetadata(doc: MetadataDocument, tx: Record<string, any
     if (f.hideIfEmpty && (value === "" || value === "—")) continue;
     const linked = fired.filter((r) => f.risks?.includes(r.code));
     const notes = linked.map((r) => r.short).filter(Boolean);
+    const raw = resolvePath(tx, f.path);
     fields.push({
       label: f.label,
       value: notes.length ? `${value} (${notes.join(", ")})` : value,
       risk: linked.find((r) => r.severity === "danger")?.severity ?? linked[0]?.severity,
+      ...(f.format === "account" && typeof raw === "string" ? { account: raw } : {}),
     });
   }
 

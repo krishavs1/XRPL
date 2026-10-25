@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { SignerXrp } from "@ledgerhq/device-signer-kit-xrp";
+import { defaultRegistry, toDeviceScreens, type DisplayIntent } from "xrpl-clear-signing";
+import { DevicePreview } from "./DevicePreview";
 import { SPECULOS_URL, connectDevice, getDeviceAddress, signOnDevice, type TransportChoice } from "./ledger";
 import { SpeculosScreen } from "./SpeculosScreen";
 import {
@@ -16,13 +18,15 @@ const STAGES: Stage[] = ["idle", "preparing", "awaiting approval", "signed", "su
 
 interface Props {
   tx: Record<string, unknown> | null;
+  /** The previewed intent: drives the device-profile preview and the danger gate. */
+  intent: DisplayIntent | null;
   /** Called with the autofilled tx so the preview shows exactly what the device signs. */
   onPrepared: (tx: Record<string, unknown>) => void;
   /** Called when a device connects, so the rest of the app can use its account. */
   onAddress?: (address: string) => void;
 }
 
-export function LedgerPanel({ tx, onPrepared, onAddress }: Props) {
+export function LedgerPanel({ tx, intent, onPrepared, onAddress }: Props) {
   const [transport, setTransport] = useState<TransportChoice>("speculos");
   const [wss, setWss] = useState(DEFAULT_WSS);
   const [signer, setSigner] = useState<SignerXrp | null>(null);
@@ -33,6 +37,15 @@ export function LedgerPanel({ tx, onPrepared, onAddress }: Props) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ hash: string; result: string } | null>(null);
+  const [acknowledged, setAcknowledged] = useState(false);
+
+  const screens = useMemo(() => (intent ? toDeviceScreens(intent, defaultRegistry) : []), [intent]);
+  const dangerCodes = intent?.warnings.filter((w) => w.severity === "danger").map((w) => w.code) ?? [];
+  const blocked = dangerCodes.length > 0 && !acknowledged;
+
+  // A new transaction needs a fresh acknowledgement, never a carried-over one.
+  const txKey = JSON.stringify(tx);
+  useEffect(() => setAcknowledged(false), [txKey]);
 
   const host = (() => {
     try {
@@ -107,10 +120,23 @@ export function LedgerPanel({ tx, onPrepared, onAddress }: Props) {
         <button onClick={connect} disabled={busy}>
           {signer ? "reconnect" : "connect"}
         </button>
-        <button className="accent" onClick={sign} disabled={busy || !signer || !tx || balance === null}>
-          sign on device
+        <button
+          className={dangerCodes.length ? "danger" : "accent"}
+          onClick={sign}
+          disabled={busy || !signer || !tx || balance === null || blocked}
+        >
+          {dangerCodes.length ? "sign anyway" : "sign on device"}
         </button>
       </div>
+      {signer && dangerCodes.length > 0 && (
+        <label className="ack">
+          <input type="checkbox" checked={acknowledged} onChange={(e) => setAcknowledged(e.target.checked)} />
+          <span>
+            This transaction has {dangerCodes.length} danger warning{dangerCodes.length === 1 ? "" : "s"} (
+            <code>{dangerCodes.join(", ")}</code>). I understand the risk and want to sign it anyway.
+          </span>
+        </label>
+      )}
       <p className="statusline">
         {signer ? (
           <>
@@ -146,7 +172,24 @@ export function LedgerPanel({ tx, onPrepared, onAddress }: Props) {
         </p>
       )}
       {error && <p className="error-inline">{error}</p>}
-      {transport === "speculos" && <SpeculosScreen url={SPECULOS_URL} />}
+      <div className="device-compare">
+        <figure>
+          <figcaption>
+            <strong>Today</strong> · Ledger XRP app
+          </figcaption>
+          {transport === "speculos" ? (
+            <SpeculosScreen url={SPECULOS_URL} />
+          ) : (
+            <div className="device-frame off">Look at your connected device.</div>
+          )}
+        </figure>
+        <figure>
+          <figcaption>
+            <strong>With this standard</strong> · device profile
+          </figcaption>
+          {screens.length ? <DevicePreview screens={screens} /> : <div className="device-frame off">No transaction loaded.</div>}
+        </figure>
+      </div>
     </div>
   );
 }

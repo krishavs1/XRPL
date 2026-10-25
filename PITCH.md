@@ -76,7 +76,8 @@ rules, which ERC-7730 doesn't define.
 
 - **Idea:** names a real, universal security hole; first XRPL display standard.
 - **Implementation:** working library + registry + device signing end-to-end.
-- **Demo:** scary-hex → plain-English → device secure screen, in one window.
+- **Demo:** scary-hex → plain-English → today's device screen vs. the
+  clear-signing device profile, in one window.
 - **Potential:** adoptable by every wallet Monday; extensible per XLS; registry
   governance modeled on ERC-7730's reviewed-repo precedent.
 
@@ -102,5 +103,7 @@ rules, which ERC-7730 doesn't define.
 3. **Simulate** → projected balance changes from the live ledger.
 4. Load the Batch → "1 signature, 2 hidden transactions" unfolds with inner
    warnings.
-5. Sign it on the Ledger — same intent on the device screen, in the same
-   browser window. Close: "Every wallet on XRPL can have this Monday."
+5. Sign it on the Ledger — the button is locked until you acknowledge the
+   danger warnings. Side by side: today's Ledger screen (raw fields, scam and
+   real look the same) vs. the clear-signing device profile (⚠ impersonation
+   first, "Reject recommended" last), in the same browser window. Close: "Every wallet on XRPL can have this Monday."
