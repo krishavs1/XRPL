@@ -4,66 +4,104 @@
 (ERC-7730-style, for XRPL) plus a reference TypeScript parser that turns any
 XRPL transaction — JSON or raw signing blob — into human-readable,
 risk-annotated intent. Enriched with live `simulate` dry runs (XLS-69) and
-rendered all the way down to a Ledger device.
+rendered against a Ledger device.
 
-Built in 36 hours at the AI & Fintech XRPL Hackathon, NYC (Oct 24–25, 2026).
+Built at the AI & Fintech XRP Ledger Hackathon, NYC (Oct 24–25, 2026).
 
 ## The problem
 
 Every XRPL wallet hand-rolls its own transaction rendering; hardware devices
-show raw fields at best. Nothing warns you that a TrustSet named "RLUSD" points
-at a scam issuer, that a Payment has the partial-payment flag set, or that one
-Batch signature (XLS-56) executes eight hidden transactions.
+show raw fields at best, and newer transaction types fall back to blind
+signing. Nothing warns you that a TrustSet named "RLUSD" points at a scam
+issuer, that a Payment has the partial-payment flag set (so the stated amount
+isn't what arrives), or that one Batch signature (XLS-56) executes several
+hidden transactions. Ethereum answered this with ERC-7730; XRPL has no
+equivalent.
 
 ## What this is
 
-1. **`spec/transaction-display-metadata.md`** — a draft standard: display
-   metadata format, account registry with impersonation detection, standardized
-   risk codes, Batch recursion rules, device rendering profile.
-2. **`packages/core`** (`xrpl-clear-signing`) — the reference implementation:
+1. **`spec/transaction-display-metadata.md`** — a draft standard: the display
+   metadata format, an account registry with impersonation detection,
+   standardized risk codes, Batch recursion rules, and a device rendering
+   profile. `spec/DISCUSSION-POST.md` is the pre-proposal write-up for
+   XRPL-Standards.
+2. **`packages/core`** (`xrpl-clear-signing`) — the reference parser:
    `explain(blobOrJson) → DisplayIntent` with typed renderers for TrustSet,
-   Payment, OfferCreate, EscrowCreate, Batch (+ safe fallback for everything
-   else), plus `simulateTx()` for XLS-69 dry-run enrichment.
-3. **`apps/demo`** — web app: paste hex → see intent + warnings; one click
-   simulates against testnet/QuickNode and shows projected balance changes.
-4. **`harness/`** — Ledger signing via Speculos or a physical device, with the
-   Clear Signing preview shown before the device prompt.
+   Payment, OfferCreate, EscrowCreate, AMMDeposit, and Batch, plus a safe
+   fallback for every other type, and `simulateTx()` for XLS-69 dry-run
+   enrichment.
+3. **`apps/demo`** — a web tool: paste hex or JSON, see the decoded intent and
+   risk warnings, simulate against the network, stream live ledger
+   transactions, and sign on a Ledger (Speculos emulator or a real device).
+4. **`harness/`** — standalone Ledger signing scripts: `sign-dmk.ts` (the
+   pre-release `device-signer-kit-xrp`) and `sign-hw-app.ts` (the stable
+   `hw-app-xrp` fallback).
+
+## What's live vs. static
+
+Being explicit, because it matters for a security tool:
+
+- **Static:** the account registry (`packages/core/registry/issuers.json`, a
+  small hand-maintained JSON file). Issuer names and the "verified" marks come
+  from it, not from the ledger. The UI shows "unknown account" when an address
+  isn't in it.
+- **Live:** `simulate` dry runs, account balances, the faucet, the transaction
+  feed, and signing/submission all hit a real XRPL endpoint (public testnet by
+  default; point it at QuickNode via the endpoint fields).
+- **Testnet:** everything here runs on testnet. The demo fixtures use
+  throwaway testnet issuer accounts, not mainnet RLUSD.
 
 ## Quickstart
 
 ```sh
 npm install
-npm test        # core library tests
+npm test        # core library tests (9 passing)
 npm run demo    # web demo at http://localhost:5173
-# Ledger flow (after starting Speculos — see harness/README.md):
-npx tsx harness/sign-hw-app.ts
 ```
+
+For the Ledger flow, start the Speculos emulator first (see
+`harness/README.md`), then either use the "sign on device" button in the demo
+or run `npx tsx harness/sign-dmk.ts`.
+
+> **Emulator note:** Speculos serves one client at a time. Don't run the
+> harness and the browser demo (or two browser tabs) against it at once — a
+> concurrent APDU exchange surfaces as a generic "Unexpected device exchange
+> error". Use one client; after any device error, reload the tab.
 
 ## Demo script (90s)
 
-1. Paste the scam TrustSet blob → preview screams: unverified issuer,
-   effectively-unlimited limit, **"RLUSD" impersonation**.
-2. Load the legit RLUSD TrustSet → clean preview, verified issuer ✓.
-3. Hit **Simulate** → projected balance changes from a live XLS-69 dry run.
-4. Load the Batch → one signature, two hidden transactions, unfolded with their
+1. Load the scam TrustSet fixture → the preview flags unverified issuer,
+   effectively-unlimited limit, and **"RLUSD" impersonation**.
+2. Hit **simulate** → the ledger returns `tesSUCCESS`: a scam trustline is a
+   perfectly valid transaction. Neither the ledger nor the device can see the
+   scam — only the metadata layer does.
+3. Load the legit RLUSD TrustSet → clean preview, verified issuer ✓.
+4. Load the Batch → one signature, two inner transactions unfolded, their
    warnings bubbled up.
-5. Cut to the Ledger device: same intent on the secure screen. Sign.
+5. Sign on the Ledger → the device shows the same transaction on its secure
+   screen, and it settles on testnet.
 
-## Prize mapping
+## Layout
 
-- **Protocol Innovation track** — a standards draft (to be posted to
-  XRPL-Standards Discussions) + reusable tooling/infrastructure.
-- **Ledger bounty** — `device-signer-kit-xrp`/Speculos integration, Clear
-  Signing beyond EVM, DX feedback in `FEEDBACK.md` + upstream issues.
-- **QuickNode bounty** — simulate + submit through QuickNode XRPL RPC; live
-  feed via WSS/Streams (set your endpoint in the demo).
+```
+packages/core   the xrpl-clear-signing library (parser, registry, simulate)
+apps/demo       the web tool
+harness         standalone Ledger signing scripts
+spec            the draft standard + the XRPL-Standards discussion post
+FEEDBACK.md     DX findings on the pre-release Ledger kit
+PITCH.md        pitch notes and prize-track mapping
+```
 
-## TODO (build order)
+## Status
 
-- [ ] **Speculos signing working end-to-end** (tonight — highest variance)
-- [ ] `device-signer-kit-xrp` port + file breakages upstream (FEEDBACK.md)
-- [ ] Add testnet RLUSD issuer (from booth) to `registry/` + demo samples
-- [ ] QuickNode endpoint env + live transaction feed panel in demo
-- [ ] AMMDeposit + OfferCreate slippage-vs-simulate check
-- [ ] Post spec to XRPL-Standards GitHub Discussions; link here
-- [ ] Record fallback demo video
+- [x] Parser: 6 transaction types + safe fallback, 9 passing fixture tests
+- [x] Risk warnings incl. impersonation, partial-payment, Batch, AMM slippage
+- [x] `simulate` (XLS-69) dry runs with projected balance changes
+- [x] Live ledger transaction feed (WebSocket `subscribe`)
+- [x] Device signing end-to-end via `device-signer-kit-xrp` on Speculos
+- [x] Draft spec + XRPL-Standards discussion post written
+- [ ] Post the spec to XRPL-Standards Discussions and link it here
+- [ ] Swap in the event's testnet RLUSD issuer (booth) + run on a real device
+- [ ] Point the demo at a QuickNode endpoint for the live feed + simulate
+- [ ] File the `FEEDBACK.md` findings as issues on `LedgerHQ/device-sdk-ts`
+- [ ] Record a fallback demo video
